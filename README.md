@@ -42,7 +42,9 @@ access to that data.
 
 **B2C**
 
-- Abandoned cart recovery, capped per cart.
+- Abandoned cart recovery, capped per cart, plus a `checkout_abandoned` campaign trigger for the
+  stronger, later-funnel signal of a shopper who reached checkout and dropped, distinct from one
+  who only added to cart.
 - Welcome email on registration.
 - Win-back / re-engagement email after N days of inactivity, self-clearing once the customer orders again — either
   the built-in, single fixed-threshold cron, or a composable `customer_inactive` campaign trigger with its own
@@ -61,11 +63,13 @@ access to that data.
   configurable lead time.
 - Churn-risk detection — a self-relative "drifting from their own order cadence" signal (median order interval,
   not a fixed inactivity threshold), usable as a segment/campaign condition and surfaced in the sales-rep digest.
-- Birthday / signup-anniversary campaign trigger, firing once per calendar year.
+- Birthday / signup-anniversary campaign trigger, firing once per calendar year — date of birth,
+  registration date, or a customer's own first-order date.
 - Wishlist abandonment reminder — the gap left between cart and browse abandonment, for items added to a
   wishlist with no order since.
 - Zero-party-data surveys — an NPS prompt or a custom text/choice question, answered directly by the customer
-  and usable as its own segment/campaign condition.
+  and usable as its own segment/campaign condition (`nps_score_at_least`/`nps_score_at_most`), including
+  escalating a detractor response straight to the lead-routing engine via a campaign action.
 - Gamified "spin the wheel" reward popup — a frequency-capped popup awarding one of several configured reward
   tiers, optionally minting a real single-use coupon.
 
@@ -95,6 +99,9 @@ access to that data.
 
 - Behavioral tagging — the segmentation primitive every trigger above reads or writes.
 - Sales-rep signature on automated emails; a weekly digest groups inactive customers by rep.
+- Lead routing — round-robin rep assignment by a configurable rule (customer attribute match), triggered from
+  registration, a lead-score threshold crossing, or any campaign trigger via the `assign_lead_routing_rule`
+  action.
 - Campaign engine — a "when X happens and Y is true, do Z" rule engine, with conditions/actions as
   `di.xml`-registered plug-ins and a full REST service contract. A multi-step `delay_minutes` chain can set an
   exit condition re-checked before every delayed step, skipping the rest once satisfied (e.g. the customer
@@ -124,7 +131,8 @@ access to that data.
   acquisition campaign), and a daily purchase-funnel/drop-off report.
 - Consent & preferences — per-channel/per-topic opt-out tracked admin-side (GDPR export/erase included), plus a
   self-service storefront/headless "Communication Preferences" page (REST + GraphQL) a logged-in customer can
-  manage themselves, and a no-login one-click unsubscribe (RFC 8058) on every `send_email` send.
+  manage themselves — including their own message-frequency cap, always the tighter of it and the admin-wide
+  cap — and a no-login one-click unsubscribe (RFC 8058) on every `send_email` send.
 
 Every feature has its own config toggle under **Stores → Configuration → Ordo Automation** and its own cron job.
 

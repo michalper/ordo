@@ -9,6 +9,44 @@ no manual step needed here anymore.
 
 ## [Unreleased]
 
+## [1.17.0] - 2026-11-28
+
+A sixth brainstorm pass against current cart-recovery and zero-party-data preference-center
+trends, with every candidate grepped against the actual codebase before being listed, turned up
+four real gaps: a stronger-signal checkout-abandonment trigger, a first-purchase anniversary date
+source, a detractor-NPS-to-lead-routing connector, and a per-customer self-service message-
+frequency preference. Verifying the first of those also surfaced a real, pre-existing dedup bug
+affecting two unrelated crons.
+
+### Added
+
+- `checkout_abandoned` campaign trigger - a stronger, later-funnel signal than `cart_abandoned`:
+  fires for a quote whose owning customer reached checkout and has had no order since, distinct
+  from a shopper who only added to cart. New `Cron\SendCheckoutAbandonmentReminders`, dispatch-only
+  (no built-in reminder), capped per quote. See `docs/adr/0092`.
+- `first_order` date source for the `customer_anniversary` campaign trigger - lets a store build
+  an anniversary campaign off a customer's first purchase date (`MIN(sales_order.created_at)`),
+  not just date of birth or registration date. See `docs/adr/0091`.
+- `nps_score_at_most` campaign condition + `assign_lead_routing_rule` campaign action - lets a
+  store escalate a detractor NPS/survey response straight to the lead-routing engine from the
+  campaign builder, off any trigger, not just the two hardcoded real-time events this previously
+  required. See `docs/adr/0093`.
+- Per-customer self-service message-frequency preference - a new field on the storefront
+  "Communication Preferences" page lets a customer tighten (never loosen) how many marketing
+  messages they receive across every channel combined, on top of the existing admin-wide cap.
+  See `docs/adr/0094`.
+
+### Fixed
+
+- **Campaign/segment-blast claim dedup**: `DispatchCustomerAnniversaryCampaigns` and
+  `DispatchSegmentBlastCampaigns` built their claim-table "already dispatched" check with a bare
+  column name instead of the `column = ?` condition format `ReminderLogStore::countMatching()`
+  requires - once either claim table held even one row, the check silently degraded to a
+  truthy-column test that falsely matched every OTHER (customer, campaign) pair too, blocking
+  every dispatch but the first one ever made. `DispatchCustomerInactiveCampaigns` already used the
+  correct format; both fixed to match, with a regression test proving a pre-existing unrelated
+  claim row no longer blocks a different customer's dispatch.
+
 ## [1.16.0] - 2026-11-25
 
 A full audit of where this module mixes order currencies found 7 real bugs; a parallel audit for
