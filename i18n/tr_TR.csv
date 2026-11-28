@@ -1300,3 +1300,7 @@
 "Countries (comma-separated ISO codes)","Ülkeler (virgülle ayrılmış ISO kodları)"
 "2-letter codes, e.g. US,PL,DE - matches the customer's default billing address.","2 harfli kodlar, örn. US,PL,DE - müşterinin varsayılan fatura adresiyle eşleşir."
 "Country Is","Ülke"
+"Order Shipped","Sipariş Gönderildi"
+"Order Refunded","Sipariş İade Edildi"
+"Order Shipped Notification","Sipariş Gönderim Bildirimi"
+"Post-Refund Follow-Up","İade Sonrası Takip"

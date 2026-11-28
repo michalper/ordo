@@ -78,6 +78,8 @@ class TriggerEvent implements OptionSourceInterface
                 'value' => CampaignTriggerInterface::TRIGGER_SEARCH_NO_RESULTS,
                 'label' => __('On-Site Search, No Results'),
             ],
+            ['value' => CampaignTriggerInterface::TRIGGER_ORDER_SHIPPED, 'label' => __('Order Shipped')],
+            ['value' => CampaignTriggerInterface::TRIGGER_ORDER_REFUNDED, 'label' => __('Order Refunded')],
         ];
     }
 }

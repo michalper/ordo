@@ -1300,3 +1300,7 @@
 "Countries (comma-separated ISO codes)","국가(쉼표로 구분된 ISO 코드)"
 "2-letter codes, e.g. US,PL,DE - matches the customer's default billing address.","2자리 코드, 예: US,PL,DE - 고객의 기본 청구지 주소와 일치합니다."
 "Country Is","국가가 다음과 일치"
+"Order Shipped","주문 배송됨"
+"Order Refunded","주문 환불됨"
+"Order Shipped Notification","주문 배송 알림"
+"Post-Refund Follow-Up","환불 후 후속 조치"

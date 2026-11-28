@@ -82,6 +82,12 @@ $applyFlowButtonLabel = __('Apply flow to form & Save');
                     <button type="button" data-flow-template="tagged_customer_followup">
                         <?= $escaper->escapeHtml(__('Follow Up on Tagged Customers')) ?>
                     </button>
+                    <button type="button" data-flow-template="order_shipped_notification">
+                        <?= $escaper->escapeHtml(__('Order Shipped Notification')) ?>
+                    </button>
+                    <button type="button" data-flow-template="order_refunded_followup">
+                        <?= $escaper->escapeHtml(__('Post-Refund Follow-Up')) ?>
+                    </button>
                 </div>
             </details>
             <button type="button" class="action-primary" data-flow-action="apply"><?=

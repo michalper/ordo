@@ -1300,3 +1300,7 @@
 "Countries (comma-separated ISO codes)","Országok (vesszővel elválasztott ISO kódok)"
 "2-letter codes, e.g. US,PL,DE - matches the customer's default billing address.","2 betűs kódok, pl. US,PL,DE - az ügyfél alapértelmezett számlázási címével egyezik."
 "Country Is","Az ország"
+"Order Shipped","Megrendelés feladva"
+"Order Refunded","Megrendelés visszatérítve"
+"Order Shipped Notification","Értesítés a megrendelés feladásáról"
+"Post-Refund Follow-Up","Nyomonkövetés visszatérítés után"

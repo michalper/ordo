@@ -1300,3 +1300,7 @@
 "Countries (comma-separated ISO codes)","Länder (durch Kommas getrennte ISO-Codes)"
 "2-letter codes, e.g. US,PL,DE - matches the customer's default billing address.","2-stellige Codes, z. B. US,PL,DE - entspricht der Standard-Rechnungsadresse des Kunden."
 "Country Is","Land ist"
+"Order Shipped","Bestellung versendet"
+"Order Refunded","Bestellung erstattet"
+"Order Shipped Notification","Benachrichtigung über Bestellversand"
+"Post-Refund Follow-Up","Nachfassaktion nach Rückerstattung"

@@ -47,6 +47,8 @@ cases separately from the type-by-type ones.
 |---------------------------|-------------------------------------------------------------------------------|---------------------------------------------------|
 | `order_placed`            | `Observer/DispatchOrderPlacedCampaigns.php` (`sales_order_place_after`)       | ✅ `AdminCampaignScenarioEndToEndTest`            |
 | `order_canceled`          | `Observer/DispatchOrderCanceledCampaigns.php` (`order_cancel_after`, Magento core) | ✅ `AdminCampaignOrderCanceledTriggerTest`   |
+| `order_shipped`           | `Observer/DispatchOrderShippedCampaigns.php` (`sales_order_shipment_save_after`, Magento core; docs/adr/0086) | ✅ `AdminCampaignOrderShippedTriggerTest`    |
+| `order_refunded`          | `Observer/DispatchOrderRefundedCampaigns.php` (`sales_order_creditmemo_save_after`, Magento core; docs/adr/0086) | ✅ `AdminCampaignOrderRefundedTriggerTest` |
 | `customer_registered`     | `Observer/DispatchCustomerRegisteredCampaigns.php`                            | ✅ `AdminCampaignCustomerRegisteredTriggerTest`   |
 | `tag_added`               | `Observer/DispatchTagAddedCampaigns.php` (`ordo_customer_tag_added`)          | ✅ `AdminCampaignTagAddedTriggerTest`             |
 | `cart_abandoned`          | `Cron/SendAbandonedCartReminders.php`'s own dispatch, not a live observer     | ✅ `AdminSendAbandonedCartReminderAndTriggerTest` |

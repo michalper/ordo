@@ -18,6 +18,18 @@
     <event name="order_cancel_after">
         <observer name="ordo_automation_dispatch_order_canceled_campaigns" instance="Ordo\Automation\Observer\DispatchOrderCanceledCampaigns"/>
     </event>
+    <!-- Both of these are Magento core's own events, fired by \Magento\Sales\Model\ResourceModel\
+         Order\Shipment::save()/Creditmemo::save() respectively - and, same as sales_order_save_after
+         below, fire on EVERY save of the same shipment/credit memo, not just its creation (e.g.
+         adding a tracking number to an existing shipment, or a comment to an existing credit memo,
+         both resave the same entity). See Observer\AbstractDispatchOrderSubEntityCampaigns's own
+         docblock for the resave guard both observers need because of this. -->
+    <event name="sales_order_shipment_save_after">
+        <observer name="ordo_automation_dispatch_order_shipped_campaigns" instance="Ordo\Automation\Observer\DispatchOrderShippedCampaigns"/>
+    </event>
+    <event name="sales_order_creditmemo_save_after">
+        <observer name="ordo_automation_dispatch_order_refunded_campaigns" instance="Ordo\Automation\Observer\DispatchOrderRefundedCampaigns"/>
+    </event>
     <!-- RecordTriggerOutcome/RecordCampaignOutcome/DispatchOrderPlacedCampaigns/
          DispatchReferralConvertedCampaigns are all on sales_order_save_after, NOT
          sales_order_place_after - see each class's own docblock for why:

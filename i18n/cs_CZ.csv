@@ -1300,3 +1300,7 @@
 "Countries (comma-separated ISO codes)","Země (kódy ISO oddělené čárkami)"
 "2-letter codes, e.g. US,PL,DE - matches the customer's default billing address.","Dvoupísmenné kódy, např. US,PL,DE - odpovídá výchozí fakturační adrese klienta."
 "Country Is","Země je"
+"Order Shipped","Objednávka odeslána"
+"Order Refunded","Objednávka vrácena"
+"Order Shipped Notification","Oznámení o odeslání objednávky"
+"Post-Refund Follow-Up","Navazující akce po vrácení platby"

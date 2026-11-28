@@ -930,3 +930,107 @@ Commerce-only-primitive ceiling respectively, not re-litigated here).
   → immediate visitor tag → re-attributed and re-aggregated through the real login-stitching
   pipeline → the existing `HasTag` condition correctly matched the resulting customer tag, with
   zero new condition class.
+
+**A fresh 2026-11-28 brainstorm round, checked against current marketing-automation/loyalty-platform
+feature trends, with every candidate grepped against the actual codebase
+(`Api/Data/CampaignTriggerInterface.php`'s 22 `TRIGGER_*` constants, `Observer/Dispatch*Campaigns.php`,
+`etc/db_schema.xml`'s `ordo_loyalty_points_ledger`) before being listed, not trusted from README/ROADMAP
+prose alone.** Most of what current research surfaces — AI-driven message personalization, zero-party
+data capture folded into loyalty progression, real-time behavior-driven triggers, gamification mechanics
+like spin-to-win, CDP-style unified identity, predictive churn/CLV scoring — is already shipped under a
+different name, see the rest of this file. Vague "agentic AI"/"autonomous journey optimization" framing
+from vendor marketing has no concrete, implementable primitive behind it and wasn't turned into a
+candidate for that reason, the same bar `generate_ai_content`'s own local-only design already set. A
+"login/engagement streak" gamification mechanic was considered and dropped: confirmed via `grep` that no
+streak concept exists anywhere in this codebase, but it would duplicate the signal
+`Cron\TagLoyaltyMilestones`'s order-count milestones and the spin-the-wheel popup (ADR 0063) already give,
+for a consecutive-period bookkeeping cost (missed weeks, timezone boundaries) out of proportion to the
+marginal engagement lever it adds. No candidate below needs a Commerce-only primitive, a paid third-party
+account this project lacks, or touches the standing no-auto-charge constraint.
+
+- ~~**Order-shipped / delivery notification trigger.**~~ — shipped, see
+  `docs/adr/0086-order-shipped-refunded-triggers.md`. New `order_shipped` trigger
+  (`Observer\DispatchOrderShippedCampaigns` on core's own `sales_order_shipment_save_after`), context
+  carrying `shipment_id`/`tracking_numbers`/`carrier_titles` alongside the usual order-level keys,
+  guarded against re-firing when an existing shipment is merely resaved later (e.g. a tracking
+  number added after the fact) — the same trap `DispatchOrderPlacedCampaigns` already documents for
+  `sales_order_save_after`, applied to a different entity.
+- ~~**Order-refunded / credit-memo-issued trigger.**~~ — shipped, same ADR. New `order_refunded`
+  trigger (`Observer\DispatchOrderRefundedCampaigns` on core's own
+  `sales_order_creditmemo_save_after`), context carrying `creditmemo_id`/`refund_total` as separate
+  keys from the order's own `order_total` — deliberately not overloading it, since every other
+  order trigger's `order_total` means the order's `base_grand_total`, not a refund amount. Both new
+  observers extend a new shared `Observer\AbstractDispatchOrderSubEntityCampaigns`, the same
+  "extract once two near-identical observers exist" precedent `AbstractDispatchOrderCampaigns`
+  already set.
+- **Loyalty points liability & redemption report.** `ordo_loyalty_points_ledger` is append-only
+  (earn/redeem/expire rows, balance = `SUM(points_delta)`, per its own schema comment), but nothing
+  reads it in aggregate — a store running the points program (ADR 0044) has no way to see outstanding
+  point liability (the unredeemed balance across every customer — the real "owed" number a finance
+  team needs), redemption rate, or earn-vs-expire trend over time. Pure read-only SQL over an existing
+  table, same shape as every other report grid in this module (no new table, no cron) — closes the
+  one concrete, implementable piece of the "loyalty ROI/liability measurement" gap this round's
+  research kept surfacing.
+
+**A fresh 2026-11-28 brainstorm round (second pass, same day), checked against current
+marketing-automation/loyalty/CDP platform coverage (prebuilt lifecycle email templates, omnichannel
+dashboards, gamified/flexible loyalty rewards, loyalty-as-platform framing), with every candidate
+grepped against the actual codebase — `Api/Data/CampaignTriggerInterface.php`'s trigger constants,
+`Model/Campaign/Action/*`, `Model/LoyaltyPointsManager.php`, `Model/Customer360/*` — before being
+listed, not trusted from README/ROADMAP prose alone.** Vague "AI campaign generation from a single
+prompt" claims from vendor marketing were not turned into a candidate for the same reason past
+rounds already rejected similarly-framed "agentic AI" ideas: no concrete, implementable primitive
+behind them. An "organic social engagement capture" idea (turning social-platform engagement into
+email subscribers) was considered and dropped on sight, not re-litigated in detail: it would need
+the same Meta Business/Instagram Graph API app-review path this project has already hit a wall on
+twice (Google Ads Customer Match's spend threshold, WhatsApp Business Login's Facebook Page
+requirement — see this file's own "Test coverage" section), so proposing it again would just invite
+a third identical dead end. No candidate below needs a Commerce-only primitive, a paid third-party
+account this project lacks, or touches the standing no-auto-charge constraint.
+
+- **Found a real, previously-undetected mistake in this file's own history while checking the
+  loyalty-points area for gaps:** the 2026-11-13 brainstorm round (fourth pass) claimed non-order
+  loyalty-point-earning was already shipped, citing `Model\Campaign\Action\AddPoints` as "already a
+  generic action attachable to any trigger, not order-only." That class is real and is already
+  generic — but it calls `CustomerScoreManager::addPoints()`, the **lead-scoring** system's own
+  score (`score_threshold_crossed` trigger, `ScoreAtLeast` condition), a completely different
+  "points" concept from the **loyalty rewards** points balance `Model\LoyaltyPointsManager` backs
+  (`ordo_loyalty_points_ledger`, redeemable via `LoyaltyPointsManagement`, the Google Wallet pass,
+  this same round's own liability-report candidate above). There is no campaign action anywhere
+  that awards loyalty points — `Observer\EarnLoyaltyPointsForOrder` is the only writer of `type =
+  earn` rows, and it's hardcoded to fire proportionally to an order's own total, not callable from
+  any other trigger. **New candidate: `Model\Campaign\Action\AddLoyaltyPoints`**, params `{"points":
+  "100"}` (same shape as `AddPoints`'s own params), calling a new small, explicit
+  `LoyaltyPointsManager::awardBonus(int $customerId, int $points, string $reason)` method (a thin
+  wrapper writing a `type = earn` row directly, parallel to `earnForOrder()` but without an
+  `order_id`) — this is what actually lets a store run a signup-bonus campaign
+  (`customer_registered` trigger), a referral bonus distinct from `generate_coupon`
+  (`referral_converted`/`referral_signed_up` triggers), or a time-boxed "double points this
+  weekend" promotion (`segment_blast`/`scheduled_at` trigger + `AddLoyaltyPoints` with a
+  params-computed multiplier), none of which this module can build today despite the points
+  program itself (ADR 0044) being otherwise complete.
+- **Loyalty points are expiring without any warning to the customer.** `Cron\ExpireLoyaltyPoints`
+  (when `Helper\Config::getLoyaltyPointsExpiryDays()` is set) silently deletes old earn rows via
+  `LoyaltyPointsManager::expireOldEarnedPoints()` with zero customer-facing notice beforehand — the
+  one standard loyalty-program retention lever ("you're about to lose points, come spend them")
+  this module's points feature doesn't have, despite every *other* "something is about to expire"
+  signal in this codebase (offer expiry, credit limit, wishlist/cart/browse abandonment) already
+  following the same scan→claim→dispatch shape. A new `Cron\SendLoyaltyPointsExpiringReminders`
+  would scan `ordo_loyalty_points_ledger` for `type = earn`, `expired_at IS NULL` rows whose
+  `created_at` is within a configurable `warning_days` window of the real expiry cutoff
+  `expireOldEarnedPoints()` will later use, claim them the same way `ReminderLogStore::claim()`
+  already does for every other reminder cron, and dispatch a new `TRIGGER_LOYALTY_POINTS_EXPIRING`
+  trigger with the at-risk point total in context.
+- **Customer 360 has no chronological touchpoint timeline for the one customer it's open on.**
+  `Model\Customer360\Customer360SnapshotBuilder::build()` aggregates point-in-time summary stats
+  (latest NPS score, matching segments, order stats, and — per ADR 0050 — CLV/churn-risk) but
+  nothing in this module reads `ordo_message_log`/`ordo_message_log_event`/
+  `ordo_campaign_outcome_log` *per customer, in chronological order* anywhere — every existing
+  report (`RevenueAnalytics`, `CampaignComparison`, `MessageEngaged`'s own condition query) reads
+  those tables aggregated across customers or scoped to one campaign, never as one customer's own
+  sent/opened/clicked/converted history laid out as a timeline. A new section on the existing
+  Customer 360 page, backed by a new read-only method joining those three tables by `customer_id`
+  and ordering by timestamp — same "pure SQL over existing tables, no new table, no cron" shape
+  every analytics addition in this module already uses - would answer the question an admin
+  actually asks when a customer calls in: "what has this specific person actually received and
+  done, in order?"

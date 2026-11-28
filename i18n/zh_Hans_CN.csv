@@ -1300,3 +1300,7 @@
 "Countries (comma-separated ISO codes)","国家（以逗号分隔的ISO代码）"
 "2-letter codes, e.g. US,PL,DE - matches the customer's default billing address.","2字母代码，例如 US,PL,DE - 与客户的默认账单地址匹配。"
 "Country Is","国家是"
+"Order Shipped","订单已发货"
+"Order Refunded","订单已退款"
+"Order Shipped Notification","订单发货通知"
+"Post-Refund Follow-Up","退款后跟进"

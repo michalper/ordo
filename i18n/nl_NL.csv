@@ -1300,3 +1300,7 @@
 "Countries (comma-separated ISO codes)","Landen (door komma's gescheiden ISO-codes)"
 "2-letter codes, e.g. US,PL,DE - matches the customer's default billing address.","2-letterige codes, bijv. US,PL,DE - komt overeen met het standaard factuuradres van de klant."
 "Country Is","Land is"
+"Order Shipped","Bestelling verzonden"
+"Order Refunded","Bestelling terugbetaald"
+"Order Shipped Notification","Melding verzending bestelling"
+"Post-Refund Follow-Up","Vervolgactie na terugbetaling"

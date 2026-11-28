@@ -1104,6 +1104,20 @@ define([
                         { kind: 'condition', type: 'tag' },
                         { kind: 'action', type: 'send_email' }
                     ]
+                },
+                order_shipped_notification: {
+                    label: $t('Order Shipped Notification'),
+                    nodes: [
+                        { kind: 'trigger', type: 'order_shipped' },
+                        { kind: 'action', type: 'send_email' }
+                    ]
+                },
+                order_refunded_followup: {
+                    label: $t('Post-Refund Follow-Up'),
+                    nodes: [
+                        { kind: 'trigger', type: 'order_refunded' },
+                        { kind: 'action', type: 'send_email' }
+                    ]
                 }
             };
 
