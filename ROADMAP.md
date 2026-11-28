@@ -963,14 +963,12 @@ account this project lacks, or touches the standing no-auto-charge constraint.
   observers extend a new shared `Observer\AbstractDispatchOrderSubEntityCampaigns`, the same
   "extract once two near-identical observers exist" precedent `AbstractDispatchOrderCampaigns`
   already set.
-- **Loyalty points liability & redemption report.** `ordo_loyalty_points_ledger` is append-only
-  (earn/redeem/expire rows, balance = `SUM(points_delta)`, per its own schema comment), but nothing
-  reads it in aggregate — a store running the points program (ADR 0044) has no way to see outstanding
-  point liability (the unredeemed balance across every customer — the real "owed" number a finance
-  team needs), redemption rate, or earn-vs-expire trend over time. Pure read-only SQL over an existing
-  table, same shape as every other report grid in this module (no new table, no cron) — closes the
-  one concrete, implementable piece of the "loyalty ROI/liability measurement" gap this round's
-  research kept surfacing.
+- ~~**Loyalty points liability & redemption report.**~~ — shipped, see
+  `docs/adr/0088-loyalty-points-liability-report.md`. New `ordo/loyaltypointsreport/index` report,
+  one row per calendar month (earned/redeemed/expired, net, a running `outstanding_liability`
+  total via `SUM() OVER (ORDER BY month)`, and a `redemption_rate` left `null` rather than `0` for
+  a month with nothing earned) — pure read-only SQL over the existing `ordo_loyalty_points_ledger`,
+  no new table or cron.
 
 **A fresh 2026-11-28 brainstorm round (second pass, same day), checked against current
 marketing-automation/loyalty/CDP platform coverage (prebuilt lifecycle email templates, omnichannel

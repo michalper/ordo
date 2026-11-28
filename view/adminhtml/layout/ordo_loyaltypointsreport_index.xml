@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <head>
+        <css src="Ordo_Automation::css/_tokens.css"/>
+        <css src="Ordo_Automation::css/dashboard.css"/>
+    </head>
+    <body>
+        <referenceContainer name="content">
+            <block class="Magento\Framework\View\Element\Template" name="ordo_loyaltypointsreport_listing_intro"
+                   template="Ordo_Automation::listing_intro.phtml" before="ordo_loyaltypointsreport_listing">
+                <arguments>
+                    <argument name="intro_text" xsi:type="string">One row per calendar month: points earned, redeemed and expired (ordo_loyalty_points_ledger, see docs/adr/0044), the net change, and a running "Outstanding Liability" total - the latest month's value is the real, current, store-wide unredeemed/unexpired point balance across every customer right now. Redemption Rate is redeemed ÷ earned for that month only, blank when nothing was earned that month at all.</argument>
+                </arguments>
+            </block>
+            <uiComponent name="ordo_loyaltypointsreport_listing"/>
+        </referenceContainer>
+    </body>
+</page>

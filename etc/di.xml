@@ -158,6 +158,7 @@
                 <item name="ordo_cohortretention_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\CohortRetention\Grid\Collection</item>
                 <item name="ordo_anomalyalert_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\Anomaly\AnomalyAlert\Grid\Collection</item>
                 <item name="ordo_referral_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\Referral\Grid\Collection</item>
+                <item name="ordo_loyaltypointsreport_listing_data_source" xsi:type="string">Ordo\Automation\Model\ResourceModel\LoyaltyPointsReport\Grid\Collection</item>
             </argument>
         </arguments>
     </type>
