@@ -680,4 +680,18 @@ class ConfigTest extends TestCase
     {
         self::assertSame(0, $this->config->getLoyaltyPointsExpiryDays());
     }
+
+    public function testGetLoyaltyPointsExpiryWarningDaysDelegatesToScopeConfig(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturnMap([
+            ['ordo_automation/loyalty_points/expiry_warning_days', 'store', null, '7'],
+        ]);
+
+        self::assertSame(7, $this->config->getLoyaltyPointsExpiryWarningDays());
+    }
+
+    public function testGetLoyaltyPointsExpiryWarningDaysDefaultsToZero(): void
+    {
+        self::assertSame(0, $this->config->getLoyaltyPointsExpiryWarningDays());
+    }
 }
