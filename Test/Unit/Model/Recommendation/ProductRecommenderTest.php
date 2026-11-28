@@ -15,6 +15,9 @@ class ProductRecommenderTest extends TestCase
     /** @var int[] */
     private array $limitCalls = [];
 
+    /** @var array<int, mixed> */
+    private array $orderCalls = [];
+
     private function makeSelect(): Select
     {
         $select = $this->createStub(Select::class);
@@ -24,7 +27,10 @@ class ProductRecommenderTest extends TestCase
         $select->method('distinct')->willReturnSelf();
         $select->method('columns')->willReturnSelf();
         $select->method('group')->willReturnSelf();
-        $select->method('order')->willReturnSelf();
+        $select->method('order')->willReturnCallback(function ($spec) use ($select) {
+            $this->orderCalls[] = $spec;
+            return $select;
+        });
         $select->method('limit')->willReturnCallback(function ($count) use ($select) {
             $this->limitCalls[] = $count;
             return $select;
@@ -135,6 +141,29 @@ class ProductRecommenderTest extends TestCase
         $recommender = $this->makeRecommender($connection);
 
         self::assertSame(['SKU-X', 'SKU-Y'], $recommender->getRecommendedSkus(0, 4));
+    }
+
+    /**
+     * Regression for a real bug found via a live MFTF run: with no secondary sort key, two
+     * SKUs tied on total_qty (the common case right after a fresh install, or in a low-volume
+     * store) sort in an unspecified, observed-as-oldest-wins order - a just-sold SKU could stay
+     * permanently crowded out of the best-seller fallback by older, equally-low-volume SKUs.
+     * Breaking ties by most recent sale fixes both the real-store behavior and the MFTF test
+     * that caught it (StorefrontCrossSellWidgetTest's own seed purchase).
+     */
+    public function testBestSellerQueryBreaksTiesByMostRecentSale(): void
+    {
+        $this->orderCalls = [];
+        $connection = $this->createStub(AdapterInterface::class);
+        $connection->method('select')->willReturn($this->makeSelect());
+        $connection->method('fetchCol')->willReturnOnConsecutiveCalls(
+            [],                   // no orders at all
+            ['SKU-X', 'SKU-Y']    // best sellers
+        );
+
+        $this->makeRecommender($connection)->getRecommendedSkus(42, 4);
+
+        self::assertSame([['total_qty DESC', 'most_recent_sale DESC']], $this->orderCalls);
     }
 
     public function testBestSellerFallbackIsCachedWithinTheTtlWindow(): void
