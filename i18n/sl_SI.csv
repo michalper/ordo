@@ -1321,3 +1321,5 @@
 "No sends, engagement, or conversions recorded yet.","Še ni zabeleženih pošiljanj, interakcij ali konverzij."
 "Loyalty Points Expiring Soon","Točke zvestobe bodo kmalu potekle"
 "Add Loyalty Points","Dodajte točke zvestobe"
+"First Order Anniversary","Obletnica prvega naročila"
+"Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option; a customer with no orders never matches ""First Order Anniversary"".","Sproži enkrat na koledarsko leto, na dan, ko se lastni datum registrirane stranke ujema z današnjim dnem (mesec+dan) – preverja se vsak dan. Stranka brez datuma rojstva v datoteki se nikoli ne ujema z možnostjo »Datum rojstva«; stranka brez naročil se nikoli ne ujema z možnostjo »Obletnica prvega naročila«."

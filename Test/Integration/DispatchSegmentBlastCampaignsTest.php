@@ -287,4 +287,49 @@ class DispatchSegmentBlastCampaignsTest extends TestCase
         );
         self::assertSame(1, $claimCount, 'A second run must never add a second claim row for the same pair.');
     }
+
+    /**
+     * Regression test for a real bug: buildClaimRow()'s 'match' side used to key the claim
+     * conditions by a bare column name instead of a Zend_Db_Select::where() condition string
+     * ('customer_id = ?'), which silently degrades ReminderLogStore::countMatching() to a
+     * truthy-column check true for ANY existing row - so once this table held even one unrelated
+     * claim, every OTHER (customer, campaign) pair's claim() call falsely reported "already
+     * claimed" and was never dispatched. See DispatchCustomerAnniversaryCampaignsTest's own
+     * identical regression test for the full mechanism.
+     */
+    public function testAPreExistingUnrelatedClaimRowDoesNotBlockADifferentCustomersDispatch(): void
+    {
+        $unrelatedTag = 'segment-blast-unrelated-' . uniqid('', true);
+        $unrelatedCustomerId = $this->createCustomer();
+        self::$objectManager->get(CustomerTagManager::class)->addTag($unrelatedCustomerId, $unrelatedTag);
+        $unrelatedSegmentId = $this->createTagSegment($unrelatedTag);
+        $unrelatedCampaignId = $this->createCampaignWithSegmentBlastTrigger($unrelatedSegmentId);
+        $this->flushCampaignCache();
+        $this->makeCron()->execute();
+
+        $resourceConnection = self::$objectManager->get(ResourceConnection::class);
+        $unrelatedClaimCount = (int) $resourceConnection->getConnection()->fetchOne(
+            $resourceConnection->getConnection()->select()
+                ->from($resourceConnection->getTableName('ordo_segment_blast_trigger_claim'), 'COUNT(*)')
+                ->where('customer_id = ?', $unrelatedCustomerId)
+                ->where('campaign_id = ?', $unrelatedCampaignId)
+        );
+        self::assertSame(1, $unrelatedClaimCount, 'Sanity check: the unrelated claim row must exist.');
+
+        $tag = 'segment-blast-after-unrelated-' . uniqid('', true);
+        $customerId = $this->createCustomer();
+        $tagManager = self::$objectManager->get(CustomerTagManager::class);
+        $tagManager->addTag($customerId, $tag);
+        $segmentId = $this->createTagSegment($tag);
+        $this->createCampaignWithSegmentBlastTrigger($segmentId);
+        $this->flushCampaignCache();
+
+        $this->makeCron()->execute();
+
+        self::assertContains(
+            $customerId,
+            $tagManager->getCustomerIdsWithTagFromSet([$customerId], 'segment_blast_received'),
+            'A pre-existing, unrelated claim row must not block this different customer\'s dispatch.'
+        );
+    }
 }

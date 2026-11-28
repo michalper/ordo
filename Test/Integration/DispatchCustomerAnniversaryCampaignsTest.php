@@ -10,6 +10,10 @@ use Magento\Framework\App\CacheInterface;
 use Magento\Framework\App\MutableScopeConfig;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\ObjectManagerInterface;
+use Magento\Sales\Model\Order;
+use Magento\Sales\Model\Order\PaymentFactory;
+use Magento\Sales\Model\OrderFactory;
+use Magento\Sales\Model\ResourceModel\Order as OrderResource;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Ordo\Automation\Cron\DispatchCustomerAnniversaryCampaigns;
@@ -45,6 +49,9 @@ class DispatchCustomerAnniversaryCampaignsTest extends TestCase
 
     /** @var int[] */
     private array $customerIds = [];
+
+    /** @var int[] */
+    private array $orderIds = [];
 
     public static function setUpBeforeClass(): void
     {
@@ -86,6 +93,21 @@ class DispatchCustomerAnniversaryCampaignsTest extends TestCase
                 ->getTableName('ordo_customer_anniversary_trigger_claim'),
             ['customer_id IN (?)' => $this->customerIds ?: [0]]
         );
+
+        $orderResource = self::$objectManager->get(OrderResource::class);
+        foreach ($this->orderIds as $orderId) {
+            try {
+                /** @var Order $order */
+                $order = self::$objectManager->get(OrderFactory::class)->create();
+                $orderResource->load($order, $orderId);
+                if ($order->getId()) {
+                    $orderResource->delete($order);
+                }
+            } catch (\Throwable $e) {
+                // Best-effort cleanup only.
+            }
+        }
+        $this->orderIds = [];
 
         $campaignResource = self::$objectManager->get(CampaignResource::class);
         $campaignFactory = self::$objectManager->get(CampaignFactory::class);
@@ -184,6 +206,42 @@ class DispatchCustomerAnniversaryCampaignsTest extends TestCase
         return $customerId;
     }
 
+    /**
+     * Same backdate-via-direct-UPDATE technique createCustomerRegisteredOnThisDayInAPastYear()
+     * already uses, plus the minimal real-order creation CohortRetentionGridCollectionTest's own
+     * createOrder() establishes - only customer_id/created_at matter to the query under test.
+     */
+    private function createOrderOnThisDayInAPastYear(int $customerId, int $yearsAgo): void
+    {
+        /** @var Order $order */
+        $order = self::$objectManager->get(OrderFactory::class)->create();
+        $order->setCustomerId($customerId);
+        $order->setState(Order::STATE_COMPLETE);
+        $order->setStatus('complete');
+        $order->setStoreId(1);
+        $order->setGrandTotal(10.0);
+        $order->setBaseGrandTotal(10.0);
+        $order->setOrderCurrencyCode('USD');
+        $order->setBaseCurrencyCode('USD');
+
+        /** @var \Magento\Sales\Model\Order\Payment $payment */
+        $payment = self::$objectManager->get(PaymentFactory::class)->create();
+        $payment->setMethod('checkmo');
+        $order->setPayment($payment);
+
+        self::$objectManager->get(OrderResource::class)->save($order);
+        $orderId = (int) $order->getId();
+        $this->orderIds[] = $orderId;
+
+        $createdAt = date('Y-m-d H:i:s', (int) strtotime("-{$yearsAgo} years"));
+        $connection = self::$objectManager->get(ResourceConnection::class)->getConnection();
+        $connection->update(
+            self::$objectManager->get(ResourceConnection::class)->getTableName('sales_order'),
+            ['created_at' => $createdAt],
+            ['entity_id = ?' => $orderId]
+        );
+    }
+
     private function createPlainCustomer(): int
     {
         $customerRepository = self::$objectManager->get(CustomerRepositoryInterface::class);
@@ -249,6 +307,37 @@ class DispatchCustomerAnniversaryCampaignsTest extends TestCase
         );
     }
 
+    public function testDispatchesForACustomerWhoseFirstOrderAnniversaryIsToday(): void
+    {
+        $this->createCampaignWithAnniversaryTrigger('first_order');
+        $this->flushCampaignCache();
+        $customerId = $this->createPlainCustomer();
+        // A second, later order proves the cron reads MIN(created_at) - the customer's actual
+        // FIRST order - not just any order of theirs.
+        $this->createOrderOnThisDayInAPastYear($customerId, 2);
+        $this->createOrderOnThisDayInAPastYear($customerId, 1);
+
+        $this->makeCron()->execute();
+
+        $tagManager = self::$objectManager->get(CustomerTagManager::class);
+        self::assertContains(
+            $customerId,
+            $tagManager->getCustomerIdsWithTagFromSet([$customerId], 'anniversary_greeted')
+        );
+    }
+
+    public function testDoesNotDispatchForACustomerWithNoOrdersOnFirstOrderDateSource(): void
+    {
+        $this->createCampaignWithAnniversaryTrigger('first_order');
+        $this->flushCampaignCache();
+        $customerId = $this->createPlainCustomer();
+
+        $this->makeCron()->execute();
+
+        $tagManager = self::$objectManager->get(CustomerTagManager::class);
+        self::assertSame([], $tagManager->getCustomerIdsWithTagFromSet([$customerId], 'anniversary_greeted'));
+    }
+
     public function testDoesNotDispatchForACustomerWithNoDateOfBirthOnFile(): void
     {
         $this->createCampaignWithAnniversaryTrigger('dob');
@@ -280,5 +369,46 @@ class DispatchCustomerAnniversaryCampaignsTest extends TestCase
                 ->where('campaign_id = ?', $campaignId)
         );
         self::assertSame(1, $claimCount, 'A second run the same year must not add another claim row.');
+    }
+
+    /**
+     * Regression test for a real bug: buildClaimRow()'s 'match' side used to key the claim
+     * conditions by a bare column name ('customer_id') instead of a Zend_Db_Select::where()
+     * condition string ('customer_id = ?'), which silently degrades ReminderLogStore::
+     * countMatching() to a truthy-column check true for ANY existing row - so once this table
+     * held even one unrelated claim, every OTHER (customer, campaign) pair's claim() call falsely
+     * reported "already claimed" and was never dispatched. This seeds exactly that pre-condition
+     * (one unrelated claim row already in the table) and proves a fresh, unrelated customer still
+     * gets claimed and dispatched.
+     */
+    public function testAPreExistingUnrelatedClaimRowDoesNotBlockADifferentCustomersDispatch(): void
+    {
+        $unrelatedCampaignId = $this->createCampaignWithAnniversaryTrigger('dob');
+        $this->flushCampaignCache();
+        $unrelatedCustomerId = $this->createCustomerWithDobToday();
+        $this->makeCron()->execute();
+
+        $connection = self::$objectManager->get(ResourceConnection::class)->getConnection();
+        $claimTable = self::$objectManager->get(ResourceConnection::class)
+            ->getTableName('ordo_customer_anniversary_trigger_claim');
+        $unrelatedClaimCount = (int) $connection->fetchOne(
+            $connection->select()->from($claimTable, 'COUNT(*)')
+                ->where('customer_id = ?', $unrelatedCustomerId)
+                ->where('campaign_id = ?', $unrelatedCampaignId)
+        );
+        self::assertSame(1, $unrelatedClaimCount, 'Sanity check: the unrelated claim row must exist.');
+
+        $campaignId = $this->createCampaignWithAnniversaryTrigger('registration');
+        $this->flushCampaignCache();
+        $customerId = $this->createCustomerRegisteredOnThisDayInAPastYear();
+
+        $this->makeCron()->execute();
+
+        $tagManager = self::$objectManager->get(CustomerTagManager::class);
+        self::assertContains(
+            $customerId,
+            $tagManager->getCustomerIdsWithTagFromSet([$customerId], 'anniversary_greeted'),
+            'A pre-existing, unrelated claim row must not block this different customer\'s dispatch.'
+        );
     }
 }

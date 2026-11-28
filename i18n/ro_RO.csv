@@ -1321,3 +1321,5 @@
 "No sends, engagement, or conversions recorded yet.","Nu a fost înregistrată încă nicio trimitere, interacțiune sau conversie."
 "Loyalty Points Expiring Soon","Punctele de loialitate expiră în scurt timp"
 "Add Loyalty Points","Adăugați puncte de loialitate"
+"First Order Anniversary","Aniversarea primei comenzi"
+"Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option; a customer with no orders never matches ""First Order Anniversary"".","Se declanșează o dată pe an calendaristic, ziua în care data unui client înregistrat se potrivește astăzi (lună+zi) - verificată în fiecare zi. Un client care nu are o dată de naștere înregistrată nu se potrivește niciodată cu opțiunea „Data nașterii”; un client fără comenzi nu se potrivește niciodată cu opțiunea „Aniversarea primei comenzi”."

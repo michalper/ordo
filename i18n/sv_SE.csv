@@ -1321,3 +1321,5 @@
 "No sends, engagement, or conversions recorded yet.","Inga utskick, interaktioner eller konverteringar registrerade ännu."
 "Loyalty Points Expiring Soon","Lojalitetspoäng går snart ut"
 "Add Loyalty Points","Lägg till lojalitetspoäng"
+"First Order Anniversary","Första beställningens årsdag"
+"Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option; a customer with no orders never matches ""First Order Anniversary"".","Avfyras en gång per kalenderår, den dag då en registrerad kunds eget datum matchar idag (månad+dag) – kontrolleras varje dag. En kund som saknar födelsedatum matchar aldrig alternativet ""Födelsedatum""; en kund utan beställningar matchar aldrig alternativet ""Första beställningens årsdag""."

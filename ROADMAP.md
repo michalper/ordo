@@ -1034,15 +1034,9 @@ project lacks, or touches the standing no-auto-charge constraint.
   establishes) would let a store build a distinctly-worded, distinctly-timed recovery flow for
   this specific, stronger signal - without touching `cart_abandoned`'s own existing behavior at
   all.
-- **`customer_anniversary`'s `date_source` has no "first order" option - only `dob`/`registration`.**
-  `Cron\DispatchCustomerAnniversaryCampaigns`'s own `DATE_SOURCE_DOB`/`DATE_SOURCE_REGISTRATION`
-  constants are the only two choices a campaign's trigger `params` can select; a store whose
-  customers' meaningful "anniversary" is their first *purchase* (not their account signup date -
-  genuinely different for a customer who registered browsing, then bought weeks later) has no way
-  to build that campaign today. A third `date_source` value, `first_order`, keyed off
-  `MIN(sales_order.created_at)` per customer (the same `first_order_id`/`cohort_month` subselect
-  shape `CohortRetention\Grid\Collection`'s own `buildCohortSelect()` already uses for "this
-  customer's own first order"), closes it with no new trigger type, no new table.
+- ~~**`customer_anniversary`'s `date_source` has no "first order" option - only `dob`/`registration`.**~~
+  Shipped, see `docs/adr/0091-customer-anniversary-first-order-date-source.md`. New `first_order`
+  `date_source` value, keyed off `MIN(sales_order.created_at)` per customer.
 - **A detractor NPS/survey response has no way to reach a human.** `Model\Campaign\Condition\
   NpsScoreAtLeast` only supports an "at least" threshold (there is no `nps_score_at_most`/
   "detractor" condition at all), and `Model\LeadRouting\LeadAssigner`/`LeadRoutingRuleEvaluator`

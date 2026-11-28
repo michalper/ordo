@@ -27,6 +27,8 @@ class DispatchCustomerAnniversaryCampaignsTest extends TestCase
         $select = $this->createStub(Select::class);
         $select->method('from')->willReturnSelf();
         $select->method('where')->willReturnSelf();
+        $select->method('group')->willReturnSelf();
+        $select->method('assemble')->willReturn('');
 
         return $select;
     }
@@ -122,6 +124,38 @@ class DispatchCustomerAnniversaryCampaignsTest extends TestCase
         $config->method('isCustomerAnniversaryTriggerEnabled')->willReturn(true);
 
         $trigger = $this->makeTrigger(1, 5, '{"date_source": "dob"}');
+        $triggerCollectionFactory = $this->createMock(TriggerCollectionFactory::class);
+        $triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([$trigger]));
+
+        $connection = $this->makeConnection([42]);
+        $connection->expects(self::once())->method('insert');
+
+        $dispatcher = $this->createMock(CampaignDispatcher::class);
+        $dispatcher->expects(self::once())->method('dispatchScheduledTrigger')
+            ->with(5, [
+                'customer_id' => 42,
+                'trigger_event' => CampaignTriggerInterface::TRIGGER_CUSTOMER_ANNIVERSARY,
+            ]);
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('info')->with(self::stringContains('1 customer_anniversary'));
+
+        $this->makeCron(
+            $config,
+            $this->makeResourceConnection($connection),
+            $triggerCollectionFactory,
+            $dispatcher,
+            $logger
+        )->execute();
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testExecuteDispatchesScheduledTriggerForFirstOrderDateSource(): void
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('isCustomerAnniversaryTriggerEnabled')->willReturn(true);
+
+        $trigger = $this->makeTrigger(1, 5, '{"date_source": "first_order"}');
         $triggerCollectionFactory = $this->createMock(TriggerCollectionFactory::class);
         $triggerCollectionFactory->method('create')->willReturn($this->makeTriggerCollection([$trigger]));
 

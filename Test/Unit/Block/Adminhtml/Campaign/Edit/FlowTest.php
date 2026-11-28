@@ -437,7 +437,7 @@ class FlowTest extends TestCase
         self::assertSame('cron_expression', $config['trigger']['recurring_schedule'][0]['name']);
         self::assertSame('date_source', $config['trigger']['customer_anniversary'][0]['name']);
         self::assertSame(
-            ['dob', 'registration'],
+            ['dob', 'registration', 'first_order'],
             array_keys($config['trigger']['customer_anniversary'][0]['options'])
         );
         self::assertSame('segment_id', $config['trigger']['segment_blast'][0]['name']);

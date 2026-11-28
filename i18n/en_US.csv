@@ -435,3 +435,5 @@
 "Countries (comma-separated ISO codes)","Countries (comma-separated ISO codes)"
 "2-letter codes, e.g. US,PL,DE - matches the customer's default billing address.","2-letter codes, e.g. US,PL,DE - matches the customer's default billing address."
 "Country Is","Country Is"
+"First Order Anniversary","First Order Anniversary"
+"Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option; a customer with no orders never matches ""First Order Anniversary"".","Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option; a customer with no orders never matches ""First Order Anniversary""."

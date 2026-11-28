@@ -30,6 +30,7 @@ class DispatchCustomerAnniversaryCampaigns extends AbstractTriggerRowClaimedDisp
     private const string CLAIM_TABLE = 'ordo_customer_anniversary_trigger_claim';
     private const string DATE_SOURCE_DOB = 'dob';
     private const string DATE_SOURCE_REGISTRATION = 'registration';
+    private const string DATE_SOURCE_FIRST_ORDER = 'first_order';
 
     public function __construct(
         private readonly Config $config,
@@ -61,6 +62,11 @@ class DispatchCustomerAnniversaryCampaigns extends AbstractTriggerRowClaimedDisp
     {
         $rawDateSource = $trigger->getParams()['date_source'] ?? '';
         $dateSource = is_string($rawDateSource) ? $rawDateSource : '';
+
+        if ($dateSource === self::DATE_SOURCE_FIRST_ORDER) {
+            return $this->findCustomersWithFirstOrderAnniversaryToday();
+        }
+
         if ($dateSource !== self::DATE_SOURCE_DOB && $dateSource !== self::DATE_SOURCE_REGISTRATION) {
             return null;
         }
@@ -70,13 +76,31 @@ class DispatchCustomerAnniversaryCampaigns extends AbstractTriggerRowClaimedDisp
 
     protected function buildClaimRow(CampaignTrigger $trigger, int $customerId): array
     {
-        $row = [
-            'customer_id' => $customerId,
-            'campaign_id' => $trigger->getCampaignId(),
-            'fired_year' => (int) date('Y'),
-        ];
+        $campaignId = $trigger->getCampaignId();
+        $firedYear = (int) date('Y');
 
-        return ['match' => $row, 'claim' => $row];
+        return [
+            // Real pre-existing bug fixed here: a bare column name (no '?') makes
+            // Zend_Db_Select::where()'s quoteInto() a no-op (str_replace('?', ..., $text) with
+            // nothing to replace), so ReminderLogStore::countMatching() silently degraded this to
+            // a truthy-column check ("WHERE (customer_id) AND (campaign_id) AND (fired_year)") -
+            // true for ANY existing row with non-zero columns, not just a matching one. Once any
+            // row at all existed in this claim table, claim() falsely reported every OTHER
+            // (customer, campaign) pair as already claimed, silently blocking every dispatch but
+            // the first. See ReminderLogStore::countMatching()'s own docblock/test for the
+            // required 'column = ?' key format - DispatchCustomerInactiveCampaigns already uses
+            // it correctly; this class and DispatchSegmentBlastCampaigns did not.
+            'match' => [
+                'customer_id = ?' => $customerId,
+                'campaign_id = ?' => $campaignId,
+                'fired_year = ?' => $firedYear,
+            ],
+            'claim' => [
+                'customer_id' => $customerId,
+                'campaign_id' => $campaignId,
+                'fired_year' => $firedYear,
+            ],
+        ];
     }
 
     /**
@@ -96,6 +120,40 @@ class DispatchCustomerAnniversaryCampaigns extends AbstractTriggerRowClaimedDisp
             ->where("{$dateColumn} IS NOT NULL")
             ->where("MONTH({$dateColumn}) = ?", (int) date('n'))
             ->where("DAY({$dateColumn}) = ?", (int) date('j'));
+
+        /** @var array<int, int|string> $customerIds */
+        $customerIds = $connection->fetchCol($select);
+
+        return array_map(static fn (int|string $id): int => (int) $id, $customerIds);
+    }
+
+    /**
+     * A customer's "first order" has no single column to read a date off (unlike dob/
+     * registration, both plain customer_entity columns) - the same MIN(created_at)-per-customer
+     * subselect shape CohortRetention\Grid\Collection::buildCohortSelect() already establishes
+     * for "this customer's own first order", wrapped in an outer month/day filter instead of that
+     * class's own cohort-bucketing. A guest order (customer_id IS NULL) never contributes a first-
+     * order date here, same reasoning CohortRetention's own buildCohortSelect() excludes guests.
+     *
+     * @return int[]
+     */
+    private function findCustomersWithFirstOrderAnniversaryToday(): array
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $orderTable = $this->resourceConnection->getTableName('sales_order');
+
+        $firstOrders = $connection->select()
+            ->from($orderTable, [
+                'customer_id',
+                'first_order_at' => new \Zend_Db_Expr('MIN(created_at)'),
+            ])
+            ->where('customer_id IS NOT NULL')
+            ->group('customer_id');
+
+        $select = $connection->select()
+            ->from(['fo' => new \Zend_Db_Expr('(' . $firstOrders->assemble() . ')')], ['customer_id'])
+            ->where('MONTH(fo.first_order_at) = ?', (int) date('n'))
+            ->where('DAY(fo.first_order_at) = ?', (int) date('j'));
 
         /** @var array<int, int|string> $customerIds */
         $customerIds = $connection->fetchCol($select);

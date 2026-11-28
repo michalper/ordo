@@ -1321,3 +1321,5 @@
 "No sends, engagement, or conversions recorded yet.","Nog geen verzendingen, interacties of conversies geregistreerd."
 "Loyalty Points Expiring Soon","Loyaliteitspunten verlopen binnenkort"
 "Add Loyalty Points","Loyaliteitspunten toevoegen"
+"First Order Anniversary","Jubileum van eerste bestelling"
+"Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option; a customer with no orders never matches ""First Order Anniversary"".","Wordt eenmaal per kalenderjaar geactiveerd, de dag dat de datum van een geregistreerde klant overeenkomt met vandaag (maand+dag) - elke dag gecontroleerd. Een klant zonder geboortedatum komt nooit overeen met de optie ""Geboortedatum""; een klant zonder bestellingen komt nooit overeen met de optie ""Jubileum van eerste bestelling""."

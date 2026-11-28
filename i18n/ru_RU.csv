@@ -1321,3 +1321,5 @@
 "No sends, engagement, or conversions recorded yet.","Пока не зафиксировано ни отправок, ни взаимодействий, ни конверсий."
 "Loyalty Points Expiring Soon","Баллы лояльности скоро истекут"
 "Add Loyalty Points","Добавить баллы лояльности"
+"First Order Anniversary","Годовщина первого заказа"
+"Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option; a customer with no orders never matches ""First Order Anniversary"".","Срабатывает один раз в календарный год, в день, когда дата зарегистрированного клиента совпадает с сегодняшней датой (месяц+день) — проверяется каждый день. Клиент, у которого нет даты рождения в файле, никогда не соответствует варианту «Дата рождения»; клиент без заказов никогда не соответствует варианту «Годовщина первого заказа»."
