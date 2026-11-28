@@ -38,7 +38,9 @@ strukturalnie nie widzą.
 
 **B2C**
 
-- Odzyskiwanie porzuconych koszyków, limitowane na koszyk.
+- Odzyskiwanie porzuconych koszyków, limitowane na koszyk, plus trigger kampanii `checkout_abandoned` dla
+  silniejszego, późniejszego sygnału lejka — klienta, który dotarł do kasy i przerwał, w odróżnieniu od tego,
+  kto tylko dodał produkt do koszyka.
 - E-mail powitalny przy rejestracji.
 - E-mail win-back po N dniach nieaktywności, czyszczony automatycznie po kolejnym zamówieniu — albo wbudowany cron
   z jednym, ustalonym progiem, albo komponowalny trigger kampanii `customer_inactive` z własnym, konfigurowalnym
@@ -58,11 +60,13 @@ strukturalnie nie widzą.
   w statusie `pending_payment` dłużej niż konfigurowalny czas.
 - Wykrywanie ryzyka odejścia (churn) — sygnał własnego rytmu zamówień klienta (mediana interwału, nie sztywny próg
   nieaktywności), dostępny jako warunek segmentu/kampanii i uwzględniony w cotygodniowym digeście dla opiekuna.
-- Trigger kampanii na urodziny / rocznicę rejestracji, odpalający się raz w roku kalendarzowym.
+- Trigger kampanii na urodziny / rocznicę rejestracji, odpalający się raz w roku kalendarzowym — data urodzenia,
+  data rejestracji albo data pierwszego zamówienia klienta.
 - Przypomnienie o porzuconej liście życzeń — wypełnia pustkę między porzuconym koszykiem a samym przeglądaniem,
   dla produktów dodanych do listy życzeń bez kolejnego zamówienia.
 - Ankiety zero-party-data — pytanie NPS albo własne pytanie tekstowe/wyboru, odpowiedź wprost od klienta, do
-  wykorzystania jako warunek segmentu/kampanii.
+  wykorzystania jako warunek segmentu/kampanii (`nps_score_at_least`/`nps_score_at_most`), w tym eskalacja
+  odpowiedzi detraktora wprost do silnika przypisywania leadów przez akcję kampanii.
 - Grywalizowany popup "zakręć kołem" — popup z limitem częstotliwości, losujący jedną z kilku skonfigurowanych
   nagród, opcjonalnie generujący prawdziwy, jednorazowy kupon.
 
@@ -93,6 +97,9 @@ strukturalnie nie widzą.
 - Tagowanie behawioralne — prymityw segmentacji, z którego korzysta każdy trigger powyżej.
 - Podpis opiekuna handlowego w automatycznych e-mailach; tygodniowy digest grupujący nieaktywnych klientów per
   opiekun.
+- Przypisywanie leadów — round-robin wg konfigurowalnej reguły (dopasowanie atrybutu klienta), odpalane przy
+  rejestracji, przy przekroczeniu progu punktacji leada albo przez dowolny trigger kampanii za pomocą akcji
+  `assign_lead_routing_rule`.
 - Silnik kampanii — reguła "gdy X i Y, zrób Z", z warunkami/akcjami jako wtyczkami rejestrowanymi w `di.xml` i
   pełnym kontraktem REST. Wieloetapowy łańcuch `delay_minutes` może mieć warunek wyjścia sprawdzany przed każdym
   odłożonym krokiem, pomijający resztę po jego spełnieniu (np. klient już skonwertował), a kampania może
@@ -123,7 +130,9 @@ strukturalnie nie widzą.
   (opcjonalnie zwężona do jednej kampanii pozyskującej), oraz dzienny raport lejka zakupowego/odpadania klientów.
 - Zgody i preferencje — śledzenie opt-out per kanał/temat po stronie admina (łącznie z eksportem/usunięciem RODO),
   a dodatkowo samoobsługowa strona "Preferencje komunikacji" dla zalogowanego klienta (REST + GraphQL, działa
-  też headless), oraz wypisanie się jednym kliknięciem bez logowania (RFC 8058) przy każdej wysyłce `send_email`.
+  też headless) — w tym własny limit częstotliwości wiadomości, zawsze ściślejszy z dwóch: swojego i
+  ogólnosklepowego — oraz wypisanie się jednym kliknięciem bez logowania (RFC 8058) przy każdej wysyłce
+  `send_email`.
 
 Każda funkcja ma własny przełącznik w **Stores → Configuration → Ordo Automation** i własne zadanie cron.
 
