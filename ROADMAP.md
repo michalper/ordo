@@ -1018,3 +1018,60 @@ account this project lacks, or touches the standing no-auto-charge constraint.
   `ordo_message_log_event`/`ordo_campaign_outcome_log` into one chronological sent/opened/clicked/
   read/converted history for one customer, rendered as a new "Touchpoint timeline" card on the
   existing Customer 360 page — no new table, cron, page, or layout handle.
+
+**A fresh 2026-11-28 brainstorm round (sixth pass), checked against current cart-recovery and
+zero-party-data preference-center trends, with every candidate grepped against the actual codebase
+(`Api/Data/CampaignTriggerInterface.php`'s trigger constants, `Model/Campaign/Condition/*`,
+`Model/Campaign/Action/*`, `Cron/DispatchCustomerAnniversaryCampaigns.php`,
+`Helper/Config.php`'s frequency-cap methods) before being listed, not trusted from README/ROADMAP
+prose alone.** No candidate below needs a Commerce-only primitive, a paid third-party account this
+project lacks, or touches the standing no-auto-charge constraint.
+
+- **`cart_abandoned` conflates two different signals current cart-recovery tooling treats as
+  separate: never started checkout vs. started checkout and dropped.** Every established
+  cart-recovery feature set we could check draws the same line Klaviyo's own "Added to Cart" vs.
+  "Started Checkout" events draw - a shopper who reached the payment/shipping step is a materially
+  higher-intent signal than one who just added something to a cart and wandered off, and gets its
+  own, faster-firing reminder in most tooling. This module already tracks the exact signal needed
+  (`checkout_start`, a theme-integration tracker event written to `ordo_visitor_event` - see
+  `view/frontend/web/js/tracker.js`'s own docblock and `Cron\CalculateFunnelMetrics`'s existing
+  read of it) but nothing dispatches a campaign off it. A new trigger, `TRIGGER_CHECKOUT_ABANDONED`,
+  dispatched by a new cron (same "join the quote/cart to the tracked event, scan for one with no
+  matching order since, claim, dispatch" shape `Cron\SendAbandonedCartReminders` already
+  establishes) would let a store build a distinctly-worded, distinctly-timed recovery flow for
+  this specific, stronger signal - without touching `cart_abandoned`'s own existing behavior at
+  all.
+- **`customer_anniversary`'s `date_source` has no "first order" option - only `dob`/`registration`.**
+  `Cron\DispatchCustomerAnniversaryCampaigns`'s own `DATE_SOURCE_DOB`/`DATE_SOURCE_REGISTRATION`
+  constants are the only two choices a campaign's trigger `params` can select; a store whose
+  customers' meaningful "anniversary" is their first *purchase* (not their account signup date -
+  genuinely different for a customer who registered browsing, then bought weeks later) has no way
+  to build that campaign today. A third `date_source` value, `first_order`, keyed off
+  `MIN(sales_order.created_at)` per customer (the same `first_order_id`/`cohort_month` subselect
+  shape `CohortRetention\Grid\Collection`'s own `buildCohortSelect()` already uses for "this
+  customer's own first order"), closes it with no new trigger type, no new table.
+- **A detractor NPS/survey response has no way to reach a human.** `Model\Campaign\Condition\
+  NpsScoreAtLeast` only supports an "at least" threshold (there is no `nps_score_at_most`/
+  "detractor" condition at all), and `Model\LeadRouting\LeadAssigner`/`LeadRoutingRuleEvaluator`
+  are only ever invoked from two hardcoded observer events (`customer_register_success`,
+  `ordo_customer_score_threshold_crossed` - see `Observer\AssignLeadRoutingRule`'s own docblock),
+  never from the campaign engine's own `ActionPool`. Together, a store genuinely cannot build "a
+  customer just gave us a low NPS score - get a rep on this" today, despite this module already
+  having every piece except the two connectors: a new `nps_score_at_most` condition (the exact
+  mirror of the existing `_at_least` one, same query, flipped comparison) and a new
+  `assign_lead_routing_rule` campaign action (a thin wrapper around the existing
+  `LeadRoutingRuleEvaluator`/`LeadAssigner` pair, reusing their round-robin assignment logic
+  as-is - `AssignLeadRoutingRule`'s own one-time-assignment guard, `LeadAssigner::hasAssignedRep()`,
+  already protects against this overwriting an existing rep relationship).
+- **No per-customer self-service message-frequency preference - only an admin-wide cap.**
+  `Helper\Config::getFrequencyCapMaxMessages()`/`getFrequencyCapWindowHours()`
+  (`Model\Campaign\FrequencyCapManager::hasCapacity()`) are store-scoped only; the storefront
+  "Communication Preferences" page (`docs/adr/0054-storefront-consent-preferences.md`,
+  `ConsentPreferencesManagementInterface`) lets a customer control channel/topic opt-in but not how
+  *often* they hear from the store at all - exactly the "let them set their own cadence" pattern
+  current preference-center guidance treats as a standard field alongside channel/topic. A new
+  nullable `ordo_customer_consent.max_messages_per_window` column (same table the existing
+  channel-level opt-in already lives in, additive, null meaning "use the admin default") would let
+  `FrequencyCapManager::hasCapacity()` take the *tighter* of the two caps - never the looser, so a
+  customer's own preference can only restrict contact, never expand beyond what the admin already
+  allows.
