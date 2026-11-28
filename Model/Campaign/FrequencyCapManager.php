@@ -3,8 +3,10 @@ declare(strict_types=1);
 
 namespace Ordo\Automation\Model\Campaign;
 
+use Magento\Customer\Api\CustomerRepositoryInterface;
 use Ordo\Automation\Helper\Config;
 use Ordo\Automation\Model\ResourceModel\MessageLog\CollectionFactory as MessageLogCollectionFactory;
+use Ordo\Automation\Setup\Patch\Data\AddCustomerMaxMessagesPerWindowAttribute;
 
 /**
  * Unified, cross-channel frequency cap - closes the ROADMAP.md Tier 3 "unified suppression/
@@ -19,12 +21,20 @@ use Ordo\Automation\Model\ResourceModel\MessageLog\CollectionFactory as MessageL
  * Opt-in (disabled by default, see Config::isFrequencyCapEnabled()) - this changes existing send
  * behavior for every install upgrading into it, and an admin who's never had a volume complaint
  * shouldn't suddenly have sends silently suppressed the day this ships.
+ *
+ * Also takes a customer's own self-service preference (the `ordo_max_messages_per_window`
+ * customer attribute, set via Api\ConsentPreferencesManagementInterface::
+ * setMyMaxMessagesPerWindow() on the storefront "Communication Preferences" page) into account -
+ * see docs/adr/0094. Always the TIGHTER of the admin cap and the customer's own value, never the
+ * looser - a customer's own preference can only restrict contact, never expand beyond what the
+ * admin already allows.
  */
 class FrequencyCapManager
 {
     public function __construct(
         private readonly Config $config,
-        private readonly MessageLogCollectionFactory $messageLogCollectionFactory
+        private readonly MessageLogCollectionFactory $messageLogCollectionFactory,
+        private readonly CustomerRepositoryInterface $customerRepository
     ) {
     }
 
@@ -42,6 +52,11 @@ class FrequencyCapManager
             return true;
         }
 
+        $customerMax = $this->getCustomerOwnMaxMessages($customerId);
+        if ($customerMax !== null && $customerMax < $maxMessages) {
+            $maxMessages = $customerMax;
+        }
+
         $windowHours = $this->config->getFrequencyCapWindowHours($storeId);
         $sentSince = date('Y-m-d H:i:s', (int) strtotime("-{$windowHours} hours"));
 
@@ -51,5 +66,29 @@ class FrequencyCapManager
         $collection->addRealSendAttemptFilter();
 
         return $collection->getSize() < $maxMessages;
+    }
+
+    /**
+     * Null means no preference set (or the customer can't be loaded) - use the admin cap alone.
+     * Same "<= 0 means no real cap" treatment the admin-configured value gets above, so a
+     * customer who somehow ends up with a zero/negative value stored doesn't silently block
+     * every send to themselves forever.
+     */
+    private function getCustomerOwnMaxMessages(int $customerId): ?int
+    {
+        try {
+            $customer = $this->customerRepository->getById($customerId);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        $attribute = $customer->getCustomAttribute(AddCustomerMaxMessagesPerWindowAttribute::ATTRIBUTE_CODE);
+        if ($attribute === null) {
+            return null;
+        }
+
+        $value = (int) $attribute->getValue();
+
+        return $value > 0 ? $value : null;
     }
 }

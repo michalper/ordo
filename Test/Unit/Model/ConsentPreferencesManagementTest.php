@@ -4,6 +4,9 @@ declare(strict_types=1);
 namespace Ordo\Automation\Test\Unit\Model;
 
 use Magento\Authorization\Model\UserContextInterface;
+use Magento\Customer\Api\CustomerRepositoryInterface;
+use Magento\Framework\Api\AttributeInterface;
+use Magento\Customer\Api\Data\CustomerInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Ordo\Automation\Model\ConsentChannel;
@@ -15,6 +18,7 @@ use Ordo\Automation\Model\ConsentPreferencesFactory;
 use Ordo\Automation\Model\ConsentPreferencesManagement;
 use Ordo\Automation\Model\ConsentTopic;
 use Ordo\Automation\Model\UserContextCustomerIdResolver;
+use Ordo\Automation\Setup\Patch\Data\AddCustomerMaxMessagesPerWindowAttribute;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 
@@ -24,6 +28,7 @@ class ConsentPreferencesManagementTest extends TestCase
     private UserContextInterface $userContext;
     private ConsentPreferencesFactory $consentPreferencesFactory;
     private ConsentChannelPreferenceFactory $consentChannelPreferenceFactory;
+    private CustomerRepositoryInterface $customerRepository;
 
     protected function setUp(): void
     {
@@ -39,6 +44,11 @@ class ConsentPreferencesManagementTest extends TestCase
         $this->consentChannelPreferenceFactory->method('create')->willReturnCallback(
             fn () => new ConsentChannelPreference()
         );
+
+        $this->customerRepository = $this->createStub(CustomerRepositoryInterface::class);
+        $noAttributeCustomer = $this->createStub(CustomerInterface::class);
+        $noAttributeCustomer->method('getCustomAttribute')->willReturn(null);
+        $this->customerRepository->method('getById')->willReturn($noAttributeCustomer);
     }
 
     private function makeManagement(): ConsentPreferencesManagement
@@ -48,7 +58,8 @@ class ConsentPreferencesManagementTest extends TestCase
             $this->userContext,
             $this->consentPreferencesFactory,
             $this->consentChannelPreferenceFactory,
-            new UserContextCustomerIdResolver()
+            new UserContextCustomerIdResolver(),
+            $this->customerRepository
         );
     }
 
@@ -150,5 +161,71 @@ class ConsentPreferencesManagementTest extends TestCase
         $this->expectException(NoSuchEntityException::class);
 
         $this->makeManagement()->getMyPreferences();
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetMyPreferencesReadsTheCustomersOwnMaxMessagesPerWindowAttribute(): void
+    {
+        $this->userContext->method('getUserId')->willReturn(42);
+        $this->consentManager->method('getConsentStates')->willReturn([]);
+        $this->consentManager->method('getTopicConsentStates')->willReturn([]);
+
+        $attribute = $this->createStub(AttributeInterface::class);
+        $attribute->method('getValue')->willReturn('3');
+        $customer = $this->createStub(CustomerInterface::class);
+        $customer->method('getCustomAttribute')->willReturn($attribute);
+        $this->customerRepository = $this->createStub(CustomerRepositoryInterface::class);
+        $this->customerRepository->method('getById')->willReturn($customer);
+
+        self::assertSame(3, $this->makeManagement()->getMyPreferences()->getMaxMessagesPerWindow());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testSetMyMaxMessagesPerWindowSavesTheAttributeAndReturnsFreshPreferences(): void
+    {
+        $this->userContext->method('getUserId')->willReturn(42);
+        $this->consentManager->method('getConsentStates')->willReturn([]);
+        $this->consentManager->method('getTopicConsentStates')->willReturn([]);
+
+        $customer = $this->createMock(CustomerInterface::class);
+        $customer->expects(self::once())->method('setCustomAttribute')
+            ->with(AddCustomerMaxMessagesPerWindowAttribute::ATTRIBUTE_CODE, 3);
+        $this->customerRepository = $this->createMock(CustomerRepositoryInterface::class);
+        $this->customerRepository->method('getById')->willReturn($customer);
+        $this->customerRepository->expects(self::once())->method('save')->with($customer);
+
+        $this->makeManagement()->setMyMaxMessagesPerWindow(3);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testSetMyMaxMessagesPerWindowClearsTheAttributeWhenGivenNull(): void
+    {
+        $this->userContext->method('getUserId')->willReturn(42);
+        $this->consentManager->method('getConsentStates')->willReturn([]);
+        $this->consentManager->method('getTopicConsentStates')->willReturn([]);
+
+        $customer = $this->createMock(CustomerInterface::class);
+        $customer->expects(self::once())->method('setCustomAttribute')
+            ->with(AddCustomerMaxMessagesPerWindowAttribute::ATTRIBUTE_CODE, null);
+        $this->customerRepository = $this->createMock(CustomerRepositoryInterface::class);
+        $this->customerRepository->method('getById')->willReturn($customer);
+
+        $this->makeManagement()->setMyMaxMessagesPerWindow(null);
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testSetMyMaxMessagesPerWindowTreatsAZeroOrNegativeValueAsClearing(): void
+    {
+        $this->userContext->method('getUserId')->willReturn(42);
+        $this->consentManager->method('getConsentStates')->willReturn([]);
+        $this->consentManager->method('getTopicConsentStates')->willReturn([]);
+
+        $customer = $this->createMock(CustomerInterface::class);
+        $customer->expects(self::once())->method('setCustomAttribute')
+            ->with(AddCustomerMaxMessagesPerWindowAttribute::ATTRIBUTE_CODE, null);
+        $this->customerRepository = $this->createMock(CustomerRepositoryInterface::class);
+        $this->customerRepository->method('getById')->willReturn($customer);
+
+        $this->makeManagement()->setMyMaxMessagesPerWindow(0);
     }
 }

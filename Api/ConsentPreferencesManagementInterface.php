@@ -42,4 +42,13 @@ interface ConsentPreferencesManagementInterface
      * @throws LocalizedException if $channel/$topic aren't real values
      */
     public function setMyTopicConsent(string $channel, string $topic, bool $consented): ConsentPreferencesInterface;
+
+    /**
+     * @param int|null $maxMessagesPerWindow Null clears the preference (falls back to the
+     *     admin-configured cap alone); a value <= 0 is treated the same as null, never as
+     *     "block every message" - see Model\Campaign\FrequencyCapManager's own docblock.
+     * @return \Ordo\Automation\Api\Data\ConsentPreferencesInterface
+     * @throws NoSuchEntityException if the caller isn't an authenticated customer
+     */
+    public function setMyMaxMessagesPerWindow(?int $maxMessagesPerWindow): ConsentPreferencesInterface;
 }

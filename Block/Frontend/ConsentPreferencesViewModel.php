@@ -85,4 +85,12 @@ class ConsentPreferencesViewModel implements ArgumentInterface
     {
         return $this->getPreferences()?->getAds() ?? true;
     }
+
+    /**
+     * Null means no self-service preference is set yet - the admin-configured cap alone applies.
+     */
+    public function getMaxMessagesPerWindow(): ?int
+    {
+        return $this->getPreferences()?->getMaxMessagesPerWindow();
+    }
 }

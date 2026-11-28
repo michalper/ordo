@@ -1050,15 +1050,8 @@ project lacks, or touches the standing no-auto-charge constraint.
   `LeadRoutingRuleEvaluator`/`LeadAssigner` pair, reusing their round-robin assignment logic
   as-is - `AssignLeadRoutingRule`'s own one-time-assignment guard, `LeadAssigner::hasAssignedRep()`,
   already protects against this overwriting an existing rep relationship).
-- **No per-customer self-service message-frequency preference - only an admin-wide cap.**
-  `Helper\Config::getFrequencyCapMaxMessages()`/`getFrequencyCapWindowHours()`
-  (`Model\Campaign\FrequencyCapManager::hasCapacity()`) are store-scoped only; the storefront
-  "Communication Preferences" page (`docs/adr/0054-storefront-consent-preferences.md`,
-  `ConsentPreferencesManagementInterface`) lets a customer control channel/topic opt-in but not how
-  *often* they hear from the store at all - exactly the "let them set their own cadence" pattern
-  current preference-center guidance treats as a standard field alongside channel/topic. A new
-  nullable `ordo_customer_consent.max_messages_per_window` column (same table the existing
-  channel-level opt-in already lives in, additive, null meaning "use the admin default") would let
-  `FrequencyCapManager::hasCapacity()` take the *tighter* of the two caps - never the looser, so a
-  customer's own preference can only restrict contact, never expand beyond what the admin already
-  allows.
+- ~~**No per-customer self-service message-frequency preference - only an admin-wide cap.**~~
+  Shipped, see `docs/adr/0094-customer-frequency-preference.md`. New `ordo_max_messages_per_window`
+  customer attribute (not a `ordo_customer_consent` column - see that ADR for why);
+  `FrequencyCapManager::hasCapacity()` takes the tighter of the admin cap and the customer's own
+  value.

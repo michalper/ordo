@@ -4,10 +4,12 @@ declare(strict_types=1);
 namespace Ordo\Automation\Model;
 
 use Magento\Authorization\Model\UserContextInterface;
+use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Ordo\Automation\Api\ConsentPreferencesManagementInterface;
 use Ordo\Automation\Api\Data\ConsentChannelPreferenceInterface;
 use Ordo\Automation\Api\Data\ConsentPreferencesInterface;
+use Ordo\Automation\Setup\Patch\Data\AddCustomerMaxMessagesPerWindowAttribute;
 
 class ConsentPreferencesManagement implements ConsentPreferencesManagementInterface
 {
@@ -16,7 +18,8 @@ class ConsentPreferencesManagement implements ConsentPreferencesManagementInterf
         private readonly UserContextInterface $userContext,
         private readonly ConsentPreferencesFactory $consentPreferencesFactory,
         private readonly ConsentChannelPreferenceFactory $consentChannelPreferenceFactory,
-        private readonly UserContextCustomerIdResolver $userContextCustomerIdResolver
+        private readonly UserContextCustomerIdResolver $userContextCustomerIdResolver,
+        private readonly CustomerRepositoryInterface $customerRepository
     ) {
     }
 
@@ -54,6 +57,20 @@ class ConsentPreferencesManagement implements ConsentPreferencesManagementInterf
         return $this->buildPreferences($customerId);
     }
 
+    public function setMyMaxMessagesPerWindow(?int $maxMessagesPerWindow): ConsentPreferencesInterface
+    {
+        $customerId = $this->userContextCustomerIdResolver->requireCustomerId($this->userContext);
+
+        $customer = $this->customerRepository->getById($customerId);
+        $customer->setCustomAttribute(
+            AddCustomerMaxMessagesPerWindowAttribute::ATTRIBUTE_CODE,
+            $maxMessagesPerWindow !== null && $maxMessagesPerWindow > 0 ? $maxMessagesPerWindow : null
+        );
+        $this->customerRepository->save($customer);
+
+        return $this->buildPreferences($customerId);
+    }
+
     private function buildPreferences(int $customerId): ConsentPreferencesInterface
     {
         $states = $this->consentManager->getConsentStates($customerId);
@@ -64,7 +81,16 @@ class ConsentPreferencesManagement implements ConsentPreferencesManagementInterf
             ->setPush($this->buildChannelPreference($customerId, $states, ConsentChannel::Push))
             ->setWhatsapp($this->buildChannelPreference($customerId, $states, ConsentChannel::WhatsApp))
             ->setRcs($this->buildChannelPreference($customerId, $states, ConsentChannel::Rcs))
-            ->setAds($states[ConsentChannel::Ads->value] ?? true);
+            ->setAds($states[ConsentChannel::Ads->value] ?? true)
+            ->setMaxMessagesPerWindow($this->getCustomerOwnMaxMessagesPerWindow($customerId));
+    }
+
+    private function getCustomerOwnMaxMessagesPerWindow(int $customerId): ?int
+    {
+        $customer = $this->customerRepository->getById($customerId);
+        $attribute = $customer->getCustomAttribute(AddCustomerMaxMessagesPerWindowAttribute::ATTRIBUTE_CODE);
+
+        return $attribute !== null ? (int) $attribute->getValue() : null;
     }
 
     /**

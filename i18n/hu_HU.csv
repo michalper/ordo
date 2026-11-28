@@ -1323,3 +1323,5 @@
 "Add Loyalty Points","Hűségpontok hozzáadása"
 "First Order Anniversary","Első rendelés évfordulója"
 "Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option; a customer with no orders never matches ""First Order Anniversary"".","Naptári évben egyszer tűz ki, azon a napon, amikor a regisztrált ügyfél saját dátuma megegyezik a mai nappal (hónap+nap) – minden nap ellenőrzik. A születési dátum nélküli ügyfél soha nem egyezik a „Születési dátum” opcióval; a rendelés nélküli ügyfél soha nem egyezik az „Első rendelés évfordulója” opcióval."
+"Limit how many marketing messages we send you across every channel combined, tighter than our own store-wide limit if you like - leave blank to just use our default.","Korlátozza, hány marketingüzenetet küldünk Önnek összesen, minden csatornán - akár szigorúbban is, mint a saját, bolti szintű korlátunk. Hagyja üresen, ha az alapértelmezett értéket szeretné használni."
+"Maximum marketing messages per window","Maximális marketingüzenetek száma időszakonként"

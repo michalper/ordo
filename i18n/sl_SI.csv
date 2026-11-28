@@ -1323,3 +1323,5 @@
 "Add Loyalty Points","Dodajte točke zvestobe"
 "First Order Anniversary","Obletnica prvega naročila"
 "Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option; a customer with no orders never matches ""First Order Anniversary"".","Sproži enkrat na koledarsko leto, na dan, ko se lastni datum registrirane stranke ujema z današnjim dnem (mesec+dan) – preverja se vsak dan. Stranka brez datuma rojstva v datoteki se nikoli ne ujema z možnostjo »Datum rojstva«; stranka brez naročil se nikoli ne ujema z možnostjo »Obletnica prvega naročila«."
+"Limit how many marketing messages we send you across every channel combined, tighter than our own store-wide limit if you like - leave blank to just use our default.","Omejite, koliko trženjskih sporočil vam pošljemo skupaj na vseh kanalih - po želji strožje od naše splošne omejitve trgovine. Pustite prazno, če želite uporabiti našo privzeto vrednost."
+"Maximum marketing messages per window","Največje število trženjskih sporočil na okno"

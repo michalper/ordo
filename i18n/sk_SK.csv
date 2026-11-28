@@ -1323,3 +1323,5 @@
 "Add Loyalty Points","Pridať vernostné body"
 "First Order Anniversary","Výročie prvej objednávky"
 "Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option; a customer with no orders never matches ""First Order Anniversary"".","Spustí sa raz za kalendárny rok, v deň, keď sa vlastný dátum registrovaného zákazníka zhoduje s dnešným dňom (mesiac+deň) – kontroluje sa každý deň. Zákazník bez dátumu narodenia v záznamoch nikdy nezodpovedá možnosti „Dátum narodenia“; zákazník bez objednávok nikdy nezodpovedá možnosti „Výročie prvej objednávky“."
+"Limit how many marketing messages we send you across every channel combined, tighter than our own store-wide limit if you like - leave blank to just use our default.","Obmedzte, koľko marketingových správ vám spolu zasielame vo všetkých kanáloch - ak chcete, môže to byť striktnejšie ako náš celkový limit obchodu. Nechajte prázdne, ak chcete použiť našu predvolenú hodnotu."
+"Maximum marketing messages per window","Maximálny počet marketingových správ za okno"

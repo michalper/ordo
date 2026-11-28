@@ -1323,3 +1323,5 @@
 "Add Loyalty Points","添加忠诚度积分"
 "First Order Anniversary","首次订单纪念日"
 "Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option; a customer with no orders never matches ""First Order Anniversary"".","每个日历年触发一次，即注册客户自己的日期与今天（月+日）匹配的那一天 - 每天检查。没有出生日期记录的客户永远不会与""出生日期""选项匹配；没有订单的客户永远不会与""首次订单纪念日""选项匹配。"
+"Limit how many marketing messages we send you across every channel combined, tighter than our own store-wide limit if you like - leave blank to just use our default.","限制我们通过所有渠道合计向您发送的营销消息数量——如果您愿意，可以比我们的全店限制更严格。留空则使用我们的默认值。"
+"Maximum marketing messages per window","每个窗口期的最大营销消息数"
