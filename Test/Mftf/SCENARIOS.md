@@ -49,6 +49,7 @@ cases separately from the type-by-type ones.
 | `order_canceled`          | `Observer/DispatchOrderCanceledCampaigns.php` (`order_cancel_after`, Magento core) | ✅ `AdminCampaignOrderCanceledTriggerTest`   |
 | `order_shipped`           | `Observer/DispatchOrderShippedCampaigns.php` (`sales_order_shipment_save_after`, Magento core; docs/adr/0086) | ✅ `AdminCampaignOrderShippedTriggerTest`    |
 | `order_refunded`          | `Observer/DispatchOrderRefundedCampaigns.php` (`sales_order_creditmemo_save_after`, Magento core; docs/adr/0086) | ✅ `AdminCampaignOrderRefundedTriggerTest` |
+| `loyalty_points_expiring` | `Cron/SendLoyaltyPointsExpiringReminders.php`'s own dispatch, not a live observer (docs/adr/0090) | ✅ `Test/Integration/SendLoyaltyPointsExpiringRemindersTest.php` — real ledger row, real campaign, real `add_tag` action; no admin-rendered page reflects a reminder's own progress, same reasoning other cron-only triggers' rows already give |
 | `customer_registered`     | `Observer/DispatchCustomerRegisteredCampaigns.php`                            | ✅ `AdminCampaignCustomerRegisteredTriggerTest`   |
 | `tag_added`               | `Observer/DispatchTagAddedCampaigns.php` (`ordo_customer_tag_added`)          | ✅ `AdminCampaignTagAddedTriggerTest`             |
 | `cart_abandoned`          | `Cron/SendAbandonedCartReminders.php`'s own dispatch, not a live observer     | ✅ `AdminSendAbandonedCartReminderAndTriggerTest` |

@@ -80,6 +80,10 @@ class TriggerEvent implements OptionSourceInterface
             ],
             ['value' => CampaignTriggerInterface::TRIGGER_ORDER_SHIPPED, 'label' => __('Order Shipped')],
             ['value' => CampaignTriggerInterface::TRIGGER_ORDER_REFUNDED, 'label' => __('Order Refunded')],
+            [
+                'value' => CampaignTriggerInterface::TRIGGER_LOYALTY_POINTS_EXPIRING,
+                'label' => __('Loyalty Points Expiring Soon'),
+            ],
         ];
     }
 }

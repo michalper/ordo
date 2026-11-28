@@ -148,5 +148,8 @@
         <job name="ordo_automation_expire_loyalty_points" instance="Ordo\Automation\Cron\ExpireLoyaltyPoints" method="execute">
             <schedule>0 5 * * *</schedule>
         </job>
+        <job name="ordo_automation_send_loyalty_points_expiring_reminders" instance="Ordo\Automation\Cron\SendLoyaltyPointsExpiringReminders" method="execute">
+            <schedule>0 4 * * *</schedule>
+        </job>
     </group>
 </config>

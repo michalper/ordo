@@ -998,18 +998,13 @@ account this project lacks, or touches the standing no-auto-charge constraint.
   time-boxed "double points this weekend" promotion (`segment_blast`/`scheduled_at` trigger),
   none of which this module could build before despite the points program itself (ADR 0044) being
   otherwise complete.
-- **Loyalty points are expiring without any warning to the customer.** `Cron\ExpireLoyaltyPoints`
-  (when `Helper\Config::getLoyaltyPointsExpiryDays()` is set) silently deletes old earn rows via
-  `LoyaltyPointsManager::expireOldEarnedPoints()` with zero customer-facing notice beforehand — the
-  one standard loyalty-program retention lever ("you're about to lose points, come spend them")
-  this module's points feature doesn't have, despite every *other* "something is about to expire"
-  signal in this codebase (offer expiry, credit limit, wishlist/cart/browse abandonment) already
-  following the same scan→claim→dispatch shape. A new `Cron\SendLoyaltyPointsExpiringReminders`
-  would scan `ordo_loyalty_points_ledger` for `type = earn`, `expired_at IS NULL` rows whose
-  `created_at` is within a configurable `warning_days` window of the real expiry cutoff
-  `expireOldEarnedPoints()` will later use, claim them the same way `ReminderLogStore::claim()`
-  already does for every other reminder cron, and dispatch a new `TRIGGER_LOYALTY_POINTS_EXPIRING`
-  trigger with the at-risk point total in context.
+- ~~**Loyalty points are expiring without any warning to the customer.**~~ — shipped, see
+  `docs/adr/0090-loyalty-points-expiring-reminder.md`. New `Cron\SendLoyaltyPointsExpiringReminders`
+  scans `ordo_loyalty_points_ledger` for `type = earn`, `expired_at IS NULL` rows inside a
+  configurable `expiry_warning_days` window of the real expiry cutoff, dispatches a new
+  `loyalty_points_expiring` trigger (once per ledger row, with that row's own `at_risk_points` in
+  context) claimed via a new `ordo_loyalty_points_expiring_reminder_log` table, same
+  scan→claim→dispatch shape every other reminder cron in this module already uses.
 - ~~**Customer 360 has no chronological touchpoint timeline for the one customer it's open on.**~~ —
   shipped, see `docs/adr/0087-customer360-touchpoint-timeline.md`. New
   `Model\Customer360\CustomerTouchpointReader::getTimeline()` merges `ordo_message_log`/

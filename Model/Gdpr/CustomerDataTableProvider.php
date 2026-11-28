@@ -85,6 +85,7 @@ class CustomerDataTableProvider
         'ordo_wishlist_abandoned_reminder_log' => 'wishlist_abandoned_reminder_log',
         'ordo_stalled_payment_reminder_log' => 'stalled_payment_reminder_log',
         'ordo_loyalty_points_ledger' => 'loyalty_points_ledger',
+        'ordo_loyalty_points_expiring_reminder_log' => 'loyalty_points_expiring_reminder_log',
     ];
 
     /**

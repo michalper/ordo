@@ -144,6 +144,12 @@
                     <validate>validate-digits</validate>
                     <depends><field id="enabled">1</field></depends>
                 </field>
+                <field id="expiry_warning_days" translate="label comment" type="text" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Warn this many days before points expire (0 = no warning)</label>
+                    <comment>Dispatches the "Loyalty Points Expiring" campaign trigger once per earned-points batch, this many days before Cron\ExpireLoyaltyPoints would otherwise expire it - wire a send_email/send_sms action onto that trigger to actually notify the customer. Ignored when "Points expire after this many days" above is 0 (nothing to warn about).</comment>
+                    <validate>validate-digits</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
             </group>
             <group id="loyalty_milestones" translate="label" type="text" sortOrder="46" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Loyalty Milestones</label>
