@@ -1300,3 +1300,7 @@
 "Countries (comma-separated ISO codes)","Країни (коди ISO через кому)"
 "2-letter codes, e.g. US,PL,DE - matches the customer's default billing address.","Двобуквені коди, напр. US,PL,DE - відповідає платіжній адресі клієнта за замовчуванням."
 "Country Is","Країна —"
+"Order Shipped","Замовлення відправлено"
+"Order Refunded","Замовлення повернено"
+"Order Shipped Notification","Сповіщення про відправлення замовлення"
+"Post-Refund Follow-Up","Супровід після повернення коштів"

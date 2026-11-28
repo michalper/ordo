@@ -1300,3 +1300,7 @@
 "Countries (comma-separated ISO codes)","Länder (ISO-koder separerade med kommatecken)"
 "2-letter codes, e.g. US,PL,DE - matches the customer's default billing address.","2-bokstavskoder, t.ex. US,PL,DE - matchar kundens standardfaktureringsadress."
 "Country Is","Land är"
+"Order Shipped","Beställning skickad"
+"Order Refunded","Beställning återbetald"
+"Order Shipped Notification","Leveransmeddelande för beställning"
+"Post-Refund Follow-Up","Uppföljning efter återbetalning"

@@ -191,6 +191,35 @@ interface CampaignTriggerInterface
     public const TRIGGER_SEARCH_NO_RESULTS = 'search_no_results';
 
     /**
+     * Fires from Observer\DispatchOrderShippedCampaigns on Magento core's own
+     * sales_order_shipment_save_after event - one dispatch per real shipment (a partial-shipment
+     * order fires this once per shipment, e.g. "box 1 of 2 shipped" then "box 2 of 2 shipped"),
+     * guarded against re-firing when an existing shipment is merely resaved later (e.g. adding a
+     * tracking number via Order\Shipment\Track\Save) - see that observer's own docblock, the same
+     * trap DispatchOrderPlacedCampaigns already documents for sales_order_save_after. Context
+     * carries the same "customer_id"/"order_total"/"order_increment_id"/"order_id" keys every
+     * other order trigger does, plus "shipment_id", "tracking_numbers" and "carrier_titles" (both
+     * comma-separated, empty string if the shipment has no tracks at all - same established
+     * free-text-list shape Action\SendWhatsApp's own "params" field already uses, not a new
+     * multi-value structure).
+     */
+    public const TRIGGER_ORDER_SHIPPED = 'order_shipped';
+
+    /**
+     * Fires from Observer\DispatchOrderRefundedCampaigns on Magento core's own
+     * sales_order_creditmemo_save_after event - one dispatch per credit memo (a partial refund
+     * followed by a second, separate credit memo fires this twice), with the same
+     * resave-reacting-to-the-same-entity guard TRIGGER_ORDER_SHIPPED above needs (an admin adding
+     * a comment to an existing credit memo resaves it). Context carries the usual
+     * "customer_id"/"order_total"/"order_increment_id"/"order_id" keys - "order_total" is always
+     * the ORDER's own base_grand_total, consistent with every other order trigger, never the
+     * refund amount - plus "creditmemo_id" and "refund_total" (the credit memo's own
+     * base_grand_total) as separate keys, so a template or condition can tell "what the order was
+     * worth" and "how much actually came back" apart.
+     */
+    public const TRIGGER_ORDER_REFUNDED = 'order_refunded';
+
+    /**
      * @return int|null
      */
     public function getEntityId(): ?int;

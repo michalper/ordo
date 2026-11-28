@@ -3911,6 +3911,54 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 1
+			path: Observer/AbstractDispatchOrderSubEntityCampaigns.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Observer/DispatchOrderRefundedCampaigns.php
+
+		-
+			message: '#^Cannot cast mixed to float\.$#'
+			identifier: cast.double
+			count: 1
+			path: Observer/DispatchOrderRefundedCampaigns.php
+
+		-
+			message: '#^Argument of an invalid type mixed supplied for foreach, only iterables are supported\.$#'
+			identifier: foreach.nonIterable
+			count: 1
+			path: Observer/DispatchOrderShippedCampaigns.php
+
+		-
+			message: '#^Cannot call method getTrackNumber\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Observer/DispatchOrderShippedCampaigns.php
+
+		-
+			message: '#^Cannot call method getTitle\(\) on mixed\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: Observer/DispatchOrderShippedCampaigns.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Observer/DispatchOrderShippedCampaigns.php
+
+		-
+			message: '#^Parameter \#2 \$array of function implode expects array\<string\>, list given\.$#'
+			identifier: argument.type
+			count: 2
+			path: Observer/DispatchOrderShippedCampaigns.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
 			path: Observer/EarnLoyaltyPointsForOrder.php
 
 		-

@@ -37,6 +37,8 @@ class TriggerEventTest extends TestCase
                 CampaignTriggerInterface::TRIGGER_WISHLIST_ABANDONED,
                 CampaignTriggerInterface::TRIGGER_SEGMENT_BLAST,
                 CampaignTriggerInterface::TRIGGER_SEARCH_NO_RESULTS,
+                CampaignTriggerInterface::TRIGGER_ORDER_SHIPPED,
+                CampaignTriggerInterface::TRIGGER_ORDER_REFUNDED,
             ],
             $values
         );

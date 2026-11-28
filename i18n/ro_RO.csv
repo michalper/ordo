@@ -1300,3 +1300,7 @@
 "Countries (comma-separated ISO codes)","Țări (coduri ISO separate prin virgulă)"
 "2-letter codes, e.g. US,PL,DE - matches the customer's default billing address.","Coduri din 2 litere, de ex. US,PL,DE - corespunde adresei de facturare implicite a clientului."
 "Country Is","Țara este"
+"Order Shipped","Comandă expediată"
+"Order Refunded","Comandă rambursată"
+"Order Shipped Notification","Notificare expediere comandă"
+"Post-Refund Follow-Up","Urmărire post-rambursare"

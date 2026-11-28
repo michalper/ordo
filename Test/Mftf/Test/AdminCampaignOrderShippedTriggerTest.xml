@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+    <test name="AdminCampaignOrderShippedTriggerTest">
+        <annotations>
+            <features value="Ordo Automation"/>
+            <stories value="Campaign engine"/>
+            <title value="Shipping a real order dispatches a campaign built on the order_shipped trigger"/>
+            <description value="Covers SCENARIOS.md #1a's order_shipped row. Same shape as AdminCampaignOrderCanceledTriggerTest, but for Observer\DispatchOrderShippedCampaigns, which fires on Magento core's own sales_order_shipment_save_after event rather than order_cancel_after. Places a REAL order through storefront checkout, ships it through the REAL admin order view page (AdminShipThePendingOrderActionGroup, the same 'Ship' button a merchant actually clicks), runs the real async queue consumer (DB-queue driver, no RabbitMQ - see AGENTS.md), and asserts the resulting send on the campaign's own Funnel widget."/>
+            <severity value="MAJOR"/>
+            <group value="ordo_automation"/>
+            <group value="campaign3"/>
+        </annotations>
+        <before>
+            <createData entity="Simple_US_Customer" stepKey="createCustomer"/>
+            <!-- ADR 0027: send_email's default topic (Promotional) now requires an explicit
+                 opt-in - no row means NOT consented, so this scenario's campaign send would
+                 otherwise be silently skipped. -->
+            <helper class="\Ordo\Automation\Test\Mftf\Helper\GdprTestHelper" method="grantPromotionalConsent" stepKey="grantPromotionalConsent">
+                <argument name="customerId">$createCustomer.id$</argument>
+            </helper>
+            <createData entity="SimpleProduct2" stepKey="createProduct"/>
+            <actionGroup ref="AdminLoginActionGroup" stepKey="loginAsAdmin"/>
+        </before>
+        <after>
+            <deleteData createDataKey="createCustomer" stepKey="deleteCustomer"/>
+            <deleteData createDataKey="createProduct" stepKey="deleteProduct"/>
+            <actionGroup ref="AdminLogoutActionGroup" stepKey="logoutAsAdmin"/>
+        </after>
+
+        <!-- Step 1: the campaign - trigger=order_shipped, action=send_email. -->
+        <amOnPage url="admin/ordo/campaign/new" stepKey="goToNewCampaignPage"/>
+        <waitForPageLoad stepKey="waitForNewCampaignPage"/>
+        <waitForElementVisible selector="[name='name']" stepKey="waitForNameField"/>
+        <fillField selector="[name='name']" userInput="Order Shipped Trigger Test Campaign" stepKey="fillName"/>
+        <waitForElementVisible selector="#ordo-campaign-flow" stepKey="waitForFlowCanvas"/>
+        <executeJS function="window.ordoFlowTestHook.buildChain([
+            {kind: 'trigger', type: 'order_shipped'},
+            {kind: 'action', type: 'send_email', fields: {template: 'ordo_campaign_generic', message: 'Your order is on its way.', delay_minutes: '0'}}
+        ]);" stepKey="buildFlowGraph"/>
+        <executeJS function="document.evaluate(&quot;//input[@name='enabled']/following-sibling::label&quot;, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue.click();" stepKey="enableCampaign"/>
+        <executeJS function="document.querySelector(&quot;[data-flow-action='apply']&quot;).click();" stepKey="clickApplyFlowAndSave"/>
+        <waitForPageLoad stepKey="waitForSave"/>
+        <see selector=".message-success" userInput="The campaign has been saved." stepKey="seeSuccessMessage"/>
+        <grabFromCurrentUrl regex="/entity_id\/(\d+)/" stepKey="grabCampaignId"/>
+
+        <!-- Step 2: a REAL order, through REAL storefront checkout, as the REAL customer created
+             above - same shape as AdminCampaignOrderCanceledTriggerTest. -->
+        <actionGroup ref="LoginToStorefrontActionGroup" stepKey="loginAsCustomer">
+            <argument name="Customer" value="$$createCustomer$$"/>
+        </actionGroup>
+        <amOnPage url="$createProduct.custom_attributes[url_key]$.html" stepKey="goToProductPage"/>
+        <waitForPageLoad stepKey="waitForProductPage"/>
+        <actionGroup ref="AddToCartFromStorefrontProductPageActionGroup" stepKey="addProductToCart">
+            <argument name="productName" value="$createProduct.name$"/>
+        </actionGroup>
+        <amOnPage url="checkout/cart" stepKey="goToCart"/>
+        <waitForPageLoad stepKey="waitForCartPage"/>
+        <actionGroup ref="PlaceOrderWithLoggedUserActionGroup" stepKey="placeRealOrder"/>
+
+        <waitForElementVisible selector="{{CheckoutSuccessMainSection.orderNumber22}}" stepKey="waitForOrderNumber"/>
+        <grabTextFrom selector="{{CheckoutSuccessMainSection.orderNumber22}}" stepKey="grabOrderNumber"/>
+
+        <!-- order_placed also dispatches for this order (unrelated to this test's own
+             order_shipped campaign, which doesn't match order_placed), draining it now so it
+             can't leak into a later test's own queue consumption. -->
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="drainOrderPlacedDispatch">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
+
+        <!-- Step 3: ship the REAL order through the REAL admin order view page - the same
+             'Ship' button/flow a merchant actually uses, which dispatches Magento core's own
+             sales_order_shipment_save_after event Observer\DispatchOrderShippedCampaigns listens
+             for. -->
+        <actionGroup ref="OpenOrderByIdActionGroup" stepKey="openOrderViewPage">
+            <argument name="orderId" value="{$grabOrderNumber}"/>
+        </actionGroup>
+        <actionGroup ref="AdminShipThePendingOrderActionGroup" stepKey="shipOrder"/>
+
+        <!-- Step 4: this install has no RabbitMQ (DB queue driver only - see AGENTS.md), so
+             nothing consumes the order_shipped dispatch message until a consumer actually runs. -->
+        <helper class="\Ordo\Automation\Test\Mftf\Helper\QueueConsumerHelper" method="drainQueueWithRetry" stepKey="runCampaignDispatchConsumer">
+            <argument name="topic">ordo.automation.campaign.dispatch</argument>
+        </helper>
+
+        <!-- Step 5: the real Funnel widget on the campaign edit page - sent=1 proves
+             DispatchOrderShippedCampaigns really published, the real consumer really ran
+             send_email, and Model\Sms\MessageLogWriter::recordSent() really wrote the outcome
+             row the Funnel widget reads. -->
+        <amOnPage url="admin/ordo/campaign/edit/entity_id/{$grabCampaignId}" stepKey="goToCampaignEditPage"/>
+        <waitForPageLoad stepKey="waitForCampaignEditPage"/>
+        <waitForElementVisible selector=".ordo-campaign-funnel table" stepKey="waitForFunnelTable"/>
+        <see selector=".ordo-campaign-funnel table tbody tr td:nth-child(1)" userInput="1" stepKey="seeSentCountIsOne"/>
+
+        <actionGroup ref="AdminDeleteOrdoEntityByFormPostActionGroup" stepKey="deleteCampaign">
+            <argument name="url" value="admin/ordo/campaign/delete/entity_id/{$grabCampaignId}"/>
+            <argument name="successMessage" value="The campaign has been deleted."/>
+        </actionGroup>
+    </test>
+</tests>

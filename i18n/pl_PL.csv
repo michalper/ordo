@@ -1300,3 +1300,7 @@
 "Countries (comma-separated ISO codes)","Kraje (kody ISO rozdzielone przecinkami)"
 "2-letter codes, e.g. US,PL,DE - matches the customer's default billing address.","Dwuliterowe kody, np. US,PL,DE - zgodnie z domyślnym adresem rozliczeniowym klienta."
 "Country Is","Kraj to"
+"Order Shipped","Zamówienie wysłane"
+"Order Refunded","Zamówienie zwrócone"
+"Order Shipped Notification","Powiadomienie o wysyłce zamówienia"
+"Post-Refund Follow-Up","Działania po zwrocie zamówienia"

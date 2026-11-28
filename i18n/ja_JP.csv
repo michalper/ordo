@@ -1300,3 +1300,7 @@
 "Countries (comma-separated ISO codes)","国（ISOコードをコンマで区切って指定）"
 "2-letter codes, e.g. US,PL,DE - matches the customer's default billing address.","2文字のコード（例: US,PL,DE）- 顧客のデフォルトの請求先住所と一致します。"
 "Country Is","国が次である"
+"Order Shipped","注文発送済み"
+"Order Refunded","注文返金済み"
+"Order Shipped Notification","注文発送通知"
+"Post-Refund Follow-Up","返金後のフォローアップ"
