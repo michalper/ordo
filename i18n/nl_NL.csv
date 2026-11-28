@@ -1323,3 +1323,5 @@
 "Add Loyalty Points","Loyaliteitspunten toevoegen"
 "First Order Anniversary","Jubileum van eerste bestelling"
 "Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option; a customer with no orders never matches ""First Order Anniversary"".","Wordt eenmaal per kalenderjaar geactiveerd, de dag dat de datum van een geregistreerde klant overeenkomt met vandaag (maand+dag) - elke dag gecontroleerd. Een klant zonder geboortedatum komt nooit overeen met de optie ""Geboortedatum""; een klant zonder bestellingen komt nooit overeen met de optie ""Jubileum van eerste bestelling""."
+"Limit how many marketing messages we send you across every channel combined, tighter than our own store-wide limit if you like - leave blank to just use our default.","Beperk hoeveel marketingberichten we u sturen, over alle kanalen samen - strenger dan onze eigen winkelbrede limiet als u dat wilt. Laat leeg om gewoon onze standaardwaarde te gebruiken."
+"Maximum marketing messages per window","Maximum aantal marketingberichten per periode"

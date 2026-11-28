@@ -129,5 +129,32 @@ $channelLabels = [
                 </tr>
             </tbody>
         </table>
+        <div class="block-ordo-frequency-preference lg:mt-4">
+            <p class="lg:mb-2">
+                <?= $escaper->escapeHtml(__(
+                    'Limit how many marketing messages we send you across every channel combined,'
+                    . ' tighter than our own store-wide limit if you like - leave blank to just use'
+                    . ' our default.'
+                )) ?>
+            </p>
+            <form method="post" action="<?= $escaper->escapeUrl($block->getUrl('ordo/consent/setfrequency')) ?>">
+                <?= $block->getBlockHtml('formkey') ?>
+                <label for="ordo-max-messages-per-window">
+                    <?= $escaper->escapeHtml(__('Maximum marketing messages per window')) ?>
+                </label>
+                <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    id="ordo-max-messages-per-window"
+                    name="max_messages_per_window"
+                    value="<?= $escaper->escapeHtmlAttr((string) ($viewModel->getMaxMessagesPerWindow() ?? '')) ?>"
+                    class="lg:rounded lg:border lg:px-2 lg:py-1"
+                />
+                <button type="submit" class="action lg:ml-2 lg:rounded lg:bg-gray-800 lg:px-3 lg:py-1 lg:text-white">
+                    <?= $escaper->escapeHtml(__('Save')) ?>
+                </button>
+            </form>
+        </div>
     </div>
 </div>

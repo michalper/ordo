@@ -102,6 +102,23 @@ class ConsentPreferencesViewModelTest extends TestCase
         self::assertFalse($viewModel->isTopicConsented(ConsentChannel::Email, ConsentTopic::Promotional));
         self::assertTrue($viewModel->isTopicConsented(ConsentChannel::Email, ConsentTopic::AccountUpdates));
         self::assertTrue($viewModel->isAdsConsented());
+        self::assertNull($viewModel->getMaxMessagesPerWindow());
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testGetMaxMessagesPerWindowReadsTheTypedGetter(): void
+    {
+        $preferences = (new ConsentPreferences())
+            ->setEmail(new ConsentChannelPreference())
+            ->setSms(new ConsentChannelPreference())
+            ->setPush(new ConsentChannelPreference())
+            ->setWhatsapp(new ConsentChannelPreference())
+            ->setRcs(new ConsentChannelPreference())
+            ->setAds(true)
+            ->setMaxMessagesPerWindow(3);
+        $this->consentPreferencesManagement->method('getMyPreferences')->willReturn($preferences);
+
+        self::assertSame(3, $this->makeViewModel()->getMaxMessagesPerWindow());
     }
 
     public function testOnlyFetchesPreferencesOnceAcrossMultipleCalls(): void

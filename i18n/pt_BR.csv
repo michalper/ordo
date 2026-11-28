@@ -1323,3 +1323,5 @@
 "Add Loyalty Points","Adicionar pontos de fidelidade"
 "First Order Anniversary","Aniversário do primeiro pedido"
 "Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option; a customer with no orders never matches ""First Order Anniversary"".","Dispara uma vez por ano civil, no dia em que a data do cliente registrado corresponde a hoje (mês+dia) - verificada todos os dias. Um cliente sem Data de Nascimento cadastrada nunca corresponde à opção ""Data de Nascimento""; um cliente sem pedidos nunca corresponde à opção ""Aniversário do primeiro pedido""."
+"Limit how many marketing messages we send you across every channel combined, tighter than our own store-wide limit if you like - leave blank to just use our default.","Limite quantas mensagens de marketing enviamos a você somando todos os canais - mais restritivo que o nosso próprio limite geral da loja, se preferir. Deixe em branco para usar nosso valor padrão."
+"Maximum marketing messages per window","Máximo de mensagens de marketing por período"

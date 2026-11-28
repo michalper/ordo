@@ -78,4 +78,17 @@ interface ConsentPreferencesInterface
      * @return $this
      */
     public function setAds(bool $ads): self;
+
+    /**
+     * Null means no self-service preference is set - the admin-configured cap alone applies.
+     *
+     * @return int|null
+     */
+    public function getMaxMessagesPerWindow(): ?int;
+
+    /**
+     * @param int|null $maxMessagesPerWindow
+     * @return $this
+     */
+    public function setMaxMessagesPerWindow(?int $maxMessagesPerWindow): self;
 }

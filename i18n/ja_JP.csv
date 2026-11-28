@@ -1323,3 +1323,5 @@
 "Add Loyalty Points","ロイヤルティポイントを加算"
 "First Order Anniversary","初回注文記念日"
 "Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option; a customer with no orders never matches ""First Order Anniversary"".","暦年に 1 回、登録された顧客自身の日付が今日 (月+日) と一致する日に起動され、毎日チェックされます。生年月日が登録されていない顧客が「生年月日」オプションと一致することはありません。注文のない顧客が「初回注文記念日」オプションと一致することもありません。"
+"Limit how many marketing messages we send you across every channel combined, tighter than our own store-wide limit if you like - leave blank to just use our default.","全チャネル合計で送信するマーケティングメッセージの件数を制限できます。ご希望であれば、当店全体の上限よりも厳しく設定することもできます。空欄のままにすると、デフォルト値が使用されます。"
+"Maximum marketing messages per window","期間ごとの最大マーケティングメッセージ数"

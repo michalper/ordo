@@ -1323,3 +1323,5 @@
 "Add Loyalty Points","로열티 포인트 추가"
 "First Order Anniversary","첫 주문 기념일"
 "Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option; a customer with no orders never matches ""First Order Anniversary"".","1년에 한 번, 등록된 고객의 날짜가 오늘(월+일)과 일치하는 날에 발생 - 매일 확인됩니다. 파일에 생년월일이 없는 고객은 ""생년월일"" 옵션과 일치하지 않습니다. 주문이 없는 고객은 ""첫 주문 기념일"" 옵션과 일치하지 않습니다."
+"Limit how many marketing messages we send you across every channel combined, tighter than our own store-wide limit if you like - leave blank to just use our default.","모든 채널을 합산하여 보내는 마케팅 메시지 수를 제한할 수 있습니다 - 원하시면 매장 전체 한도보다 더 엄격하게 설정할 수 있습니다. 기본값을 사용하려면 비워 두세요."
+"Maximum marketing messages per window","기간당 최대 마케팅 메시지 수"

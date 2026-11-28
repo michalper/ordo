@@ -419,6 +419,15 @@
             <resource ref="self"/>
         </resources>
     </route>
+    <!-- maxMessagesPerWindow is nullable (clears the preference) - passed in the request body,
+         not the path, same reasoning every other nullable/optional webapi.xml param in this
+         module already follows. -->
+    <route url="/V1/ordo/consent-preferences/mine/frequency" method="PUT">
+        <service class="Ordo\Automation\Api\ConsentPreferencesManagementInterface" method="setMyMaxMessagesPerWindow"/>
+        <resources>
+            <resource ref="self"/>
+        </resources>
+    </route>
     <!-- Its own dedicated resource, not the generic Ordo_Automation::config - a role scoped only
          to "edit Ordo config" (a plausible narrow admin role) must not be able to pull an
          arbitrary customer's credit-limit status via REST just from that. -->

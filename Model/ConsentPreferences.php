@@ -84,4 +84,16 @@ class ConsentPreferences extends DataObject implements ConsentPreferencesInterfa
         $this->setData('ads', $ads);
         return $this;
     }
+
+    public function getMaxMessagesPerWindow(): ?int
+    {
+        $value = $this->getData('max_messages_per_window');
+        return $value !== null ? (int) $value : null;
+    }
+
+    public function setMaxMessagesPerWindow(?int $maxMessagesPerWindow): self
+    {
+        $this->setData('max_messages_per_window', $maxMessagesPerWindow);
+        return $this;
+    }
 }
