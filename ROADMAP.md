@@ -1020,20 +1020,10 @@ zero-party-data preference-center trends, with every candidate grepped against t
 prose alone.** No candidate below needs a Commerce-only primitive, a paid third-party account this
 project lacks, or touches the standing no-auto-charge constraint.
 
-- **`cart_abandoned` conflates two different signals current cart-recovery tooling treats as
-  separate: never started checkout vs. started checkout and dropped.** Every established
-  cart-recovery feature set we could check draws the same line Klaviyo's own "Added to Cart" vs.
-  "Started Checkout" events draw - a shopper who reached the payment/shipping step is a materially
-  higher-intent signal than one who just added something to a cart and wandered off, and gets its
-  own, faster-firing reminder in most tooling. This module already tracks the exact signal needed
-  (`checkout_start`, a theme-integration tracker event written to `ordo_visitor_event` - see
-  `view/frontend/web/js/tracker.js`'s own docblock and `Cron\CalculateFunnelMetrics`'s existing
-  read of it) but nothing dispatches a campaign off it. A new trigger, `TRIGGER_CHECKOUT_ABANDONED`,
-  dispatched by a new cron (same "join the quote/cart to the tracked event, scan for one with no
-  matching order since, claim, dispatch" shape `Cron\SendAbandonedCartReminders` already
-  establishes) would let a store build a distinctly-worded, distinctly-timed recovery flow for
-  this specific, stronger signal - without touching `cart_abandoned`'s own existing behavior at
-  all.
+- ~~**`cart_abandoned` conflates two different signals current cart-recovery tooling treats as
+  separate: never started checkout vs. started checkout and dropped.**~~ Shipped, see
+  `docs/adr/0092-checkout-abandoned-trigger.md`. New `checkout_abandoned` trigger, dispatched by
+  `Cron\SendCheckoutAbandonmentReminders`, capped per quote.
 - ~~**`customer_anniversary`'s `date_source` has no "first order" option - only `dob`/`registration`.**~~
   Shipped, see `docs/adr/0091-customer-anniversary-first-order-date-source.md`. New `first_order`
   `date_source` value, keyed off `MIN(sales_order.created_at)` per customer.

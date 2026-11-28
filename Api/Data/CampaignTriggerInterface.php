@@ -236,6 +236,22 @@ interface CampaignTriggerInterface
     public const TRIGGER_LOYALTY_POINTS_EXPIRING = 'loyalty_points_expiring';
 
     /**
+     * A stronger, later-funnel signal than TRIGGER_CART_ABANDONED - fires from
+     * Cron\SendCheckoutAbandonmentReminders for a registered customer whose active quote reached
+     * checkout (`ordo_visitor_event` rows with event_type `checkout_start`, tracked with no
+     * `event_key` - see `view/frontend/web/js/tracker.js`'s own docblock) at or after that quote's
+     * own `created_at`, has had no cart activity for `delay_minutes`, and has placed no order
+     * since the quote started. Deliberately does NOT touch `cart_abandoned`'s own behavior at
+     * all - a shopper who reached checkout and dropped is a materially higher-intent signal than
+     * one who only added something to a cart and wandered off, same distinction most
+     * cart-recovery tooling draws between "Added to Cart" and "Started Checkout" events. Context
+     * carries "customer_id" and "cart_subtotal", same shape `TRIGGER_CART_ABANDONED` already
+     * uses. Claimed via `ordo_checkout_abandoned_reminder_log`, capped per quote the same way
+     * `cart_abandoned`'s own fixed reminder caps per cart.
+     */
+    public const TRIGGER_CHECKOUT_ABANDONED = 'checkout_abandoned';
+
+    /**
      * @return int|null
      */
     public function getEntityId(): ?int;

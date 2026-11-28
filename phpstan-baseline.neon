@@ -1186,6 +1186,18 @@ parameters:
 			message: '#^Parameter \#1 \$sql of method Magento\\Framework\\DB\\Adapter\\AdapterInterface\:\:fetchAll\(\) expects Magento\\Framework\\DB\\Select\|string, Zend_Db_Select given\.$#'
 			identifier: argument.type
 			count: 1
+			path: Cron/SendCheckoutAbandonmentReminders.php
+
+		-
+			message: '#^Parameter \#2 \$value of method Magento\\Framework\\DB\\Select\:\:where\(\) expects array\|int\|string\|null, float given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Cron/SendCheckoutAbandonmentReminders.php
+
+		-
+			message: '#^Parameter \#1 \$sql of method Magento\\Framework\\DB\\Adapter\\AdapterInterface\:\:fetchAll\(\) expects Magento\\Framework\\DB\\Select\|string, Zend_Db_Select given\.$#'
+			identifier: argument.type
+			count: 1
 			path: Cron/SendBrowseAbandonmentReminders.php
 
 		-
@@ -1215,7 +1227,7 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to float\.$#'
 			identifier: cast.double
-			count: 3
+			count: 4
 			path: Helper/Config.php
 
 		-
