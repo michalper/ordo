@@ -67,6 +67,7 @@ class TypeLabels
             'generate_coupon' => (string) __('Generate Coupon'),
             'popup' => (string) __('Show Popup'),
             'add_points' => (string) __('Add Points'),
+            'add_loyalty_points' => (string) __('Add Loyalty Points'),
             'add_product_recommendations' => (string) __('Add Product Recommendations'),
             'add_dynamic_content' => (string) __('Add Dynamic Content'),
             'send_sms' => (string) __('Send SMS'),

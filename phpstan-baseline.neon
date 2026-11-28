@@ -1456,6 +1456,12 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 2
+			path: Model/Campaign/Action/AddLoyaltyPoints.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 2
 			path: Model/Campaign/Action/AddPoints.php
 
 		-

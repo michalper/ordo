@@ -5,8 +5,12 @@ namespace Ordo\Automation\Test\Integration;
 
 use Magento\Framework\App\Bootstrap;
 use Magento\Framework\App\CacheInterface;
+use Magento\Framework\App\Config\ReinitableConfigInterface;
+use Magento\Framework\App\Config\Storage\WriterInterface as ConfigWriter;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\ObjectManagerInterface;
+use Magento\Store\Model\ScopeInterface;
+use Magento\Store\Model\StoreManagerInterface;
 use Magento\SalesRule\Model\CouponFactory;
 use Magento\SalesRule\Model\ResourceModel\Coupon as CouponResource;
 use Magento\SalesRule\Model\ResourceModel\Rule as RuleResource;
@@ -22,6 +26,7 @@ use Ordo\Automation\Model\CampaignTrigger;
 use Ordo\Automation\Model\CampaignTriggerFactory;
 use Ordo\Automation\Model\CustomerScoreManager;
 use Ordo\Automation\Model\CustomerTagManager;
+use Ordo\Automation\Model\LoyaltyPointsManager;
 use Ordo\Automation\Model\ResourceModel\Campaign as CampaignResource;
 use Ordo\Automation\Model\ResourceModel\Campaign\Action as CampaignActionResource;
 use Ordo\Automation\Model\ResourceModel\Campaign\Condition as CampaignConditionResource;
@@ -53,6 +58,7 @@ class CampaignDispatchScenarioTest extends TestCase
     private CacheInterface $cache;
     private CustomerTagManager $tagManager;
     private CustomerScoreManager $scoreManager;
+    private LoyaltyPointsManager $loyaltyPointsManager;
 
     /** @var int[] */
     private array $campaignIds = [];
@@ -62,6 +68,11 @@ class CampaignDispatchScenarioTest extends TestCase
 
     /** @var int[] */
     private array $scoresToClean = [];
+
+    /** @var int[] */
+    private array $customerIdsWithLoyaltyLedgerRows = [];
+
+    private bool $loyaltyPointsEnabledConfigWritten = false;
 
     /** @var int[] */
     private array $ruleIdsToClean = [];
@@ -85,6 +96,7 @@ class CampaignDispatchScenarioTest extends TestCase
         $this->cache = self::$objectManager->get(CacheInterface::class);
         $this->tagManager = self::$objectManager->get(CustomerTagManager::class);
         $this->scoreManager = self::$objectManager->get(CustomerScoreManager::class);
+        $this->loyaltyPointsManager = self::$objectManager->get(LoyaltyPointsManager::class);
     }
 
     protected function tearDown(): void
@@ -102,6 +114,25 @@ class CampaignDispatchScenarioTest extends TestCase
             );
         }
         $this->scoresToClean = [];
+
+        if ($this->customerIdsWithLoyaltyLedgerRows !== []) {
+            $resourceConnection = self::$objectManager->get(ResourceConnection::class);
+            $resourceConnection->getConnection()->delete(
+                $resourceConnection->getTableName('ordo_loyalty_points_ledger'),
+                ['customer_id IN (?)' => $this->customerIdsWithLoyaltyLedgerRows]
+            );
+        }
+        $this->customerIdsWithLoyaltyLedgerRows = [];
+
+        if ($this->loyaltyPointsEnabledConfigWritten) {
+            self::$objectManager->get(ConfigWriter::class)->delete(
+                'ordo_automation/loyalty_points/enabled',
+                ScopeInterface::SCOPE_STORES,
+                (int) self::$objectManager->get(StoreManagerInterface::class)->getStore()->getId()
+            );
+            self::$objectManager->get(ReinitableConfigInterface::class)->reinit();
+            $this->loyaltyPointsEnabledConfigWritten = false;
+        }
 
         foreach ($this->campaignIds as $campaignId) {
             $this->deleteCampaign($campaignId);
@@ -192,7 +223,7 @@ class CampaignDispatchScenarioTest extends TestCase
     {
         try {
             self::$objectManager->get(\Magento\Customer\Api\CustomerRepositoryInterface::class)->deleteById($customerId);
-        } catch (\Throwable $e) {
+        } catch (\Throwable) {
             // Already gone or never fully committed — nothing left to clean up.
         }
     }
@@ -228,7 +259,7 @@ class CampaignDispatchScenarioTest extends TestCase
             if ($rule->getRuleId()) {
                 $ruleResource->delete($rule);
             }
-        } catch (\Throwable $e) {
+        } catch (\Throwable) {
             // Best-effort cleanup only.
         }
     }
@@ -442,6 +473,47 @@ class CampaignDispatchScenarioTest extends TestCase
         // rather than overwriting.
         $this->dispatcher->dispatch($triggerEvent, ['customer_id' => $customerId]);
         self::assertSame(20, $this->scoreManager->getScore($customerId));
+
+        $this->deleteCustomer($customerId);
+    }
+
+    /**
+     * The real-mix-up regression this action's own ADR 0089 exists to close: add_points (above)
+     * and add_loyalty_points must award two genuinely separate balances, never the same one.
+     */
+    public function testAddLoyaltyPointsActionAwardsARealLedgerBalanceDistinctFromAddPoints(): void
+    {
+        // A real, persisted config write + reinit - same technique LoyaltyWalletPassEndpointTest's
+        // own writeConfig() already establishes. A plain MutableScopeConfig::setValue(..., SCOPE_STORE)
+        // override with no explicit scope code is a documented, already-fixed-elsewhere trap in
+        // this codebase (see AGENTS.md's "Multi-store store-scoped sends" note) - it doesn't
+        // reliably affect a later isSetFlag(..., SCOPE_STORE, $storeId) read for the real store id.
+        $storeId = (int) self::$objectManager->get(StoreManagerInterface::class)->getStore()->getId();
+        $configWriter = self::$objectManager->get(ConfigWriter::class);
+        $configWriter->save('ordo_automation/loyalty_points/enabled', 1, ScopeInterface::SCOPE_STORES, $storeId);
+        self::$objectManager->get(ReinitableConfigInterface::class)->reinit();
+        $this->loyaltyPointsEnabledConfigWritten = true;
+
+        $customerId = $this->createCustomer();
+        $this->scoresToClean[] = $customerId;
+        $this->customerIdsWithLoyaltyLedgerRows[] = $customerId;
+
+        $triggerEvent = 'test_add_loyalty_points_' . uniqid('', true);
+        $campaignId = $this->createCampaign($triggerEvent);
+        $this->addAction($campaignId, 'add_loyalty_points', ['points' => '100']);
+        $this->flushCampaignCache();
+
+        $this->dispatcher->dispatch($triggerEvent, ['customer_id' => $customerId]);
+        self::assertSame(100, $this->loyaltyPointsManager->getBalance($customerId));
+
+        // A second dispatch accumulates on top of the first - not idempotent by design (see
+        // AddLoyaltyPoints's own docblock), unlike add_points which the earlier test proves
+        // behaves the same way for its own, separate balance.
+        $this->dispatcher->dispatch($triggerEvent, ['customer_id' => $customerId]);
+        self::assertSame(200, $this->loyaltyPointsManager->getBalance($customerId));
+
+        // The two balances are genuinely separate systems, not the same number read two ways.
+        self::assertSame(0, $this->scoreManager->getScore($customerId));
 
         $this->deleteCustomer($customerId);
     }

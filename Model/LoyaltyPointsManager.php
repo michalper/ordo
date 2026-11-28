@@ -191,6 +191,24 @@ class LoyaltyPointsManager
         }
     }
 
+    /**
+     * A plain, order-less earn row - unlike earnForOrder(), there's no order_id to key an
+     * idempotency check against, so this is NOT idempotent: a campaign action calling this is
+     * responsible for its own frequency cap (FrequencyCapManager, or the trigger's own
+     * once-per-occurrence nature) if "award it twice" is a real risk for how it's wired. $reason
+     * is stored only via the same log line insertRow() already writes for expireOldEarnedPoints(),
+     * not a new column - this is a notable event worth a log line, not data the ledger itself
+     * needs to answer any question (unlike order_id, nothing reads a bonus's reason back later).
+     */
+    public function awardBonus(int $customerId, int $points, string $reason): void
+    {
+        if (!$this->config->isLoyaltyPointsEnabled() || $points <= 0) {
+            return;
+        }
+
+        $this->insertRow($customerId, self::TYPE_EARN, $points, null, null, $reason);
+    }
+
     private function hasEarnedForOrder(int $orderId): bool
     {
         $connection = $this->resourceConnection->getConnection();
