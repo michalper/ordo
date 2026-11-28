@@ -46,6 +46,14 @@ affecting two unrelated crons.
   every dispatch but the first one ever made. `DispatchCustomerInactiveCampaigns` already used the
   correct format; both fixed to match, with a regression test proving a pre-existing unrelated
   claim row no longer blocks a different customer's dispatch.
+- **Best-seller recommendation ties**: `ProductRecommender`'s best-seller fallback (used by the
+  cross-sell widget and the `AddProductRecommendations` campaign action) sorted only by total
+  quantity sold, with no secondary key - two SKUs tied on quantity (the common case for a
+  low-volume store, or right after a fresh install) sorted in an unspecified order that MySQL
+  resolved as oldest-inserted-row-wins in practice, so a genuinely-just-sold SKU could stay
+  permanently crowded out by older, equally-low-volume ones. Found while verifying this same
+  release, via a full MFTF run that had actually been red since 2026-11-25. Now breaks ties by
+  each SKU's own most recent sale.
 
 ## [1.16.0] - 2026-11-25
 
