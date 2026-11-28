@@ -48,6 +48,8 @@ class Config
     private const string XML_PATH_LOYALTY_POINTS_REDEMPTION_RULE_ID
         = 'ordo_automation/loyalty_points/redemption_rule_id';
     private const string XML_PATH_LOYALTY_POINTS_EXPIRY_DAYS = 'ordo_automation/loyalty_points/expiry_days';
+    private const string XML_PATH_LOYALTY_POINTS_EXPIRY_WARNING_DAYS
+        = 'ordo_automation/loyalty_points/expiry_warning_days';
     private const string XML_PATH_LOYALTY_MILESTONES_ENABLED = 'ordo_automation/loyalty_milestones/enabled';
 
     private const string XML_PATH_WALLET_PASS_ENABLED = 'ordo_automation/loyalty_wallet_pass/enabled';
@@ -523,6 +525,17 @@ class Config
     public function getLoyaltyPointsExpiryDays(?int $storeId = null): int
     {
         return $this->intConfig(self::XML_PATH_LOYALTY_POINTS_EXPIRY_DAYS, 0, $storeId);
+    }
+
+    /**
+     * 0 means no warning (the default) - Cron\SendLoyaltyPointsExpiringReminders no-ops
+     * entirely, same convention getLoyaltyPointsExpiryDays() itself already uses. Only
+     * meaningful when expiry itself is configured (getLoyaltyPointsExpiryDays() > 0) - the cron
+     * checks both.
+     */
+    public function getLoyaltyPointsExpiryWarningDays(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_LOYALTY_POINTS_EXPIRY_WARNING_DAYS, 0, $storeId);
     }
 
     /**

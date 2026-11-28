@@ -39,6 +39,7 @@ class TriggerEventTest extends TestCase
                 CampaignTriggerInterface::TRIGGER_SEARCH_NO_RESULTS,
                 CampaignTriggerInterface::TRIGGER_ORDER_SHIPPED,
                 CampaignTriggerInterface::TRIGGER_ORDER_REFUNDED,
+                CampaignTriggerInterface::TRIGGER_LOYALTY_POINTS_EXPIRING,
             ],
             $values
         );

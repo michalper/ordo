@@ -22,7 +22,7 @@ class CustomerDataExporterTest extends TestCase
 
         $connection = $this->createMock(AdapterInterface::class);
         $connection->method('select')->willReturn($select);
-        $connection->expects(self::exactly(34))->method('fetchAll')->with($select)->willReturn([['row' => 1]]);
+        $connection->expects(self::exactly(35))->method('fetchAll')->with($select)->willReturn([['row' => 1]]);
 
         $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($connection);
@@ -53,6 +53,7 @@ class CustomerDataExporterTest extends TestCase
         self::assertArrayHasKey('wishlist_abandoned_reminder_log', $result);
         self::assertArrayHasKey('stalled_payment_reminder_log', $result);
         self::assertArrayHasKey('loyalty_points_ledger', $result);
+        self::assertArrayHasKey('loyalty_points_expiring_reminder_log', $result);
         self::assertSame([['row' => 1]], $result['tags']);
     }
 }

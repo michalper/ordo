@@ -15,11 +15,11 @@ class CustomerDataTableProviderTest extends TestCase
         $this->provider = new CustomerDataTableProvider();
     }
 
-    public function testGetTablesReturnsAllThirtyFourCustomerKeyedTables(): void
+    public function testGetTablesReturnsAllThirtyFiveCustomerKeyedTables(): void
     {
         $tables = $this->provider->getTables();
 
-        self::assertCount(34, $tables);
+        self::assertCount(35, $tables);
         self::assertContains('ordo_customer_consent', $tables);
         self::assertContains('ordo_customer_consent_topic', $tables);
         self::assertContains('ordo_customer_consent_log', $tables);
@@ -65,6 +65,10 @@ class CustomerDataTableProviderTest extends TestCase
         // Found 2026-11-24 (security review): has a non-nullable customer_id in db_schema.xml
         // and had never been added here either, despite its sibling claim tables all being here.
         self::assertContains('ordo_segment_bulk_action_claim', $tables);
+        // Added alongside the table itself (docs/adr/0090) - caught by this test immediately,
+        // before ever shipping, the exact failure mode every earlier dated comment above
+        // documents discovering only after the fact.
+        self::assertContains('ordo_loyalty_points_expiring_reminder_log', $tables);
     }
 
     public function testGetExportKeysByTableMapsEveryTableToItsExportKey(): void
@@ -106,6 +110,7 @@ class CustomerDataTableProviderTest extends TestCase
             'ordo_wishlist_abandoned_reminder_log' => 'wishlist_abandoned_reminder_log',
             'ordo_stalled_payment_reminder_log' => 'stalled_payment_reminder_log',
             'ordo_loyalty_points_ledger' => 'loyalty_points_ledger',
+            'ordo_loyalty_points_expiring_reminder_log' => 'loyalty_points_expiring_reminder_log',
         ], $map);
     }
 

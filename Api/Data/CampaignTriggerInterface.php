@@ -220,6 +220,20 @@ interface CampaignTriggerInterface
     public const TRIGGER_ORDER_REFUNDED = 'order_refunded';
 
     /**
+     * Fires from Cron\SendLoyaltyPointsExpiringReminders for a registered customer's own earn
+     * row (`ordo_loyalty_points_ledger`, `type = earn`, `expired_at IS NULL`) once its `created_at`
+     * falls within `Helper\Config::getLoyaltyPointsExpiryWarningDays()` of the cutoff
+     * `Cron\ExpireLoyaltyPoints` will later expire it at - same "warn before, then act" shape as
+     * `TRIGGER_REVIEW_REQUEST_DUE`'s own cron. Context carries "customer_id" and
+     * "at_risk_points" (that one earn row's own point amount, not a per-customer total - a
+     * customer with more than one row approaching expiry in the same scan dispatches once per
+     * row, same reasoning `TRIGGER_WISHLIST_ABANDONED` dispatches once per wishlist item rather
+     * than once per customer). Claimed via `ordo_loyalty_points_expiring_reminder_log`, unique on
+     * the ledger row's own `entity_id` - at most one warning ever per earn row.
+     */
+    public const TRIGGER_LOYALTY_POINTS_EXPIRING = 'loyalty_points_expiring';
+
+    /**
      * @return int|null
      */
     public function getEntityId(): ?int;
