@@ -20,7 +20,11 @@ on this" - despite this module already having every piece except the two connect
 - **A new condition, `nps_score_at_most`** (`Model\Campaign\Condition\NpsScoreAtMost`) - the
   exact mirror of `NpsScoreAtLeast`, same query (`SurveyPrompt\Collection::
   addLatestResponseFilter()`'s single most-recent-*answered*-prompt read), same "threshold"
-  dedicated field, flipped comparison (`<=`, not `>=`).
+  dedicated field, flipped comparison (`<=`, not `>=`). The two are now both thin subclasses of a
+  new shared `AbstractNpsScoreThresholdCondition` - SonarCloud's new-code duplication gate flagged
+  the original copy-pasted pair (CI-blocking, not just advisory), and the right fix was extracting
+  the shared query/field shape, not suppressing the check. Each subclass supplies only the
+  comparison direction and the field label.
 - **A new action, `assign_lead_routing_rule`** (`Model\Campaign\Action\AssignLeadRoutingRule`) - a
   thin wrapper around the exact same `LeadRoutingRuleEvaluator::getMatchingRule()`/
   `LeadAssigner::assign()` pair `Observer\AssignLeadRoutingRule` already calls, reusing their

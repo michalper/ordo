@@ -1846,26 +1846,14 @@ parameters:
 		-
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
-			count: 1
-			path: Model/Campaign/Condition/NpsScoreAtLeast.php
+			count: 2
+			path: Model/Campaign/Condition/AbstractNpsScoreThresholdCondition.php
 
 		-
 			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(mixed\)\: mixed\)\|null, ''intval'' given\.$#'
 			identifier: argument.type
 			count: 1
-			path: Model/Campaign/Condition/NpsScoreAtLeast.php
-
-		-
-			message: '#^Cannot cast mixed to int\.$#'
-			identifier: cast.int
-			count: 1
-			path: Model/Campaign/Condition/NpsScoreAtMost.php
-
-		-
-			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(mixed\)\: mixed\)\|null, ''intval'' given\.$#'
-			identifier: argument.type
-			count: 1
-			path: Model/Campaign/Condition/NpsScoreAtMost.php
+			path: Model/Campaign/Condition/AbstractNpsScoreThresholdCondition.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'
