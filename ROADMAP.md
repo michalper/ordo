@@ -1021,16 +1021,9 @@ account this project lacks, or touches the standing no-auto-charge constraint.
   `expireOldEarnedPoints()` will later use, claim them the same way `ReminderLogStore::claim()`
   already does for every other reminder cron, and dispatch a new `TRIGGER_LOYALTY_POINTS_EXPIRING`
   trigger with the at-risk point total in context.
-- **Customer 360 has no chronological touchpoint timeline for the one customer it's open on.**
-  `Model\Customer360\Customer360SnapshotBuilder::build()` aggregates point-in-time summary stats
-  (latest NPS score, matching segments, order stats, and — per ADR 0050 — CLV/churn-risk) but
-  nothing in this module reads `ordo_message_log`/`ordo_message_log_event`/
-  `ordo_campaign_outcome_log` *per customer, in chronological order* anywhere — every existing
-  report (`RevenueAnalytics`, `CampaignComparison`, `MessageEngaged`'s own condition query) reads
-  those tables aggregated across customers or scoped to one campaign, never as one customer's own
-  sent/opened/clicked/converted history laid out as a timeline. A new section on the existing
-  Customer 360 page, backed by a new read-only method joining those three tables by `customer_id`
-  and ordering by timestamp — same "pure SQL over existing tables, no new table, no cron" shape
-  every analytics addition in this module already uses - would answer the question an admin
-  actually asks when a customer calls in: "what has this specific person actually received and
-  done, in order?"
+- ~~**Customer 360 has no chronological touchpoint timeline for the one customer it's open on.**~~ —
+  shipped, see `docs/adr/0087-customer360-touchpoint-timeline.md`. New
+  `Model\Customer360\CustomerTouchpointReader::getTimeline()` merges `ordo_message_log`/
+  `ordo_message_log_event`/`ordo_campaign_outcome_log` into one chronological sent/opened/clicked/
+  read/converted history for one customer, rendered as a new "Touchpoint timeline" card on the
+  existing Customer 360 page — no new table, cron, page, or layout handle.
