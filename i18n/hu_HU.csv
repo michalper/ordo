@@ -1321,3 +1321,5 @@
 "No sends, engagement, or conversions recorded yet.","Még nem rögzítettek küldést, interakciót vagy konverziót."
 "Loyalty Points Expiring Soon","A hűségpontok hamarosan lejárnak"
 "Add Loyalty Points","Hűségpontok hozzáadása"
+"First Order Anniversary","Első rendelés évfordulója"
+"Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option; a customer with no orders never matches ""First Order Anniversary"".","Naptári évben egyszer tűz ki, azon a napon, amikor a regisztrált ügyfél saját dátuma megegyezik a mai nappal (hónap+nap) – minden nap ellenőrzik. A születési dátum nélküli ügyfél soha nem egyezik a „Születési dátum” opcióval; a rendelés nélküli ügyfél soha nem egyezik az „Első rendelés évfordulója” opcióval."

@@ -1321,3 +1321,5 @@
 "No sends, engagement, or conversions recorded yet.","Henüz kayıtlı gönderim, etkileşim veya dönüşüm yok."
 "Loyalty Points Expiring Soon","Sadakat Puanlarının Süresi Yakında Doluyor"
 "Add Loyalty Points","Sadakat Puanı Ekle"
+"First Order Anniversary","İlk Sipariş Yıldönümü"
+"Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option; a customer with no orders never matches ""First Order Anniversary"".","Kayıtlı bir müşterinin kendi tarihinin bugün (ay+gün) eşleştiği günde, takvim yılında bir kez tetiklenir - her gün kontrol edilir. Kayıtlarında Doğum Tarihi bulunmayan bir müşteri hiçbir zaman ""Doğum Tarihi"" seçeneğiyle eşleşmez; siparişi olmayan bir müşteri hiçbir zaman ""İlk Sipariş Yıldönümü"" seçeneğiyle eşleşmez."

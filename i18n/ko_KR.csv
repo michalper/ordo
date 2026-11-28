@@ -1321,3 +1321,5 @@
 "No sends, engagement, or conversions recorded yet.","아직 기록된 발송, 참여, 전환이 없습니다."
 "Loyalty Points Expiring Soon","로열티 포인트 만료 예정"
 "Add Loyalty Points","로열티 포인트 추가"
+"First Order Anniversary","첫 주문 기념일"
+"Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option; a customer with no orders never matches ""First Order Anniversary"".","1년에 한 번, 등록된 고객의 날짜가 오늘(월+일)과 일치하는 날에 발생 - 매일 확인됩니다. 파일에 생년월일이 없는 고객은 ""생년월일"" 옵션과 일치하지 않습니다. 주문이 없는 고객은 ""첫 주문 기념일"" 옵션과 일치하지 않습니다."

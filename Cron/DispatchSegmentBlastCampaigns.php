@@ -82,10 +82,21 @@ class DispatchSegmentBlastCampaigns extends AbstractTriggerRowClaimedDispatchCro
 
     protected function buildClaimRow(CampaignTrigger $trigger, int $customerId): array
     {
+        $campaignId = $trigger->getCampaignId();
+
         // No date window here, unlike customer_inactive's cooldown claim - once claimed, this
         // (customer, campaign) pair never fires again.
-        $row = ['customer_id' => $customerId, 'campaign_id' => $trigger->getCampaignId()];
-
-        return ['match' => $row, 'claim' => $row];
+        //
+        // Real pre-existing bug fixed here: 'match' must use 'column = ?' keys, same as
+        // DispatchCustomerInactiveCampaigns already does - a bare column name makes
+        // Zend_Db_Select::where()'s quoteInto() a no-op, degrading ReminderLogStore::
+        // countMatching() to a truthy-column check that falsely reports every OTHER (customer,
+        // campaign) pair as already claimed once any row at all exists in this table. See
+        // DispatchCustomerAnniversaryCampaigns::buildClaimRow()'s own docblock for the full
+        // mechanism - this class had the identical bug.
+        return [
+            'match' => ['customer_id = ?' => $customerId, 'campaign_id = ?' => $campaignId],
+            'claim' => ['customer_id' => $customerId, 'campaign_id' => $campaignId],
+        ];
     }
 }

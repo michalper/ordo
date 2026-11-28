@@ -130,8 +130,10 @@ interface CampaignTriggerInterface
 
     /**
      * Fires from Cron\DispatchCustomerAnniversaryCampaigns, once per calendar year, for a
-     * registered customer whose `customer_dob` or account `created_at` month+day matches today -
-     * which of the two this trigger's own `date_source` param ("dob" or "registration") selects.
+     * registered customer whose `customer_dob`, account `created_at`, or own first order's
+     * `created_at` (`MIN(sales_order.created_at)` per customer) month+day matches today - which
+     * of the three this trigger's own `date_source` param ("dob", "registration", or
+     * "first_order") selects.
      * Unlike TRIGGER_CUSTOMER_INACTIVE's rolling, re-fireable-after-a-cooldown shape, a birthday/
      * anniversary is a fixed calendar date that can only genuinely recur once a year, so
      * ordo_customer_anniversary_trigger_claim is keyed by (customer_id, campaign_id, fired_year)

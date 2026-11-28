@@ -213,11 +213,13 @@ class Flow extends Template
                         'notice' => (string) __(
                             'Fires once per calendar year, the day a registered customer\'s own date'
                             . ' matches today (month+day) - checked every day. A customer with no'
-                            . ' Date of Birth on file never matches the "Birth Date" option.'
+                            . ' Date of Birth on file never matches the "Birth Date" option; a'
+                            . ' customer with no orders never matches "First Order Anniversary".'
                         ),
                         'options' => [
                             'dob' => (string) __('Birth Date'),
                             'registration' => (string) __('Registration Anniversary'),
+                            'first_order' => (string) __('First Order Anniversary'),
                         ],
                     ],
                 ],

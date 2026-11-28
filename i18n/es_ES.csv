@@ -1321,3 +1321,5 @@
 "No sends, engagement, or conversions recorded yet.","Todavía no se han registrado envíos, interacciones ni conversiones."
 "Loyalty Points Expiring Soon","Los puntos de fidelidad caducan pronto"
 "Add Loyalty Points","Añadir puntos de fidelidad"
+"First Order Anniversary","Aniversario del primer pedido"
+"Fires once per calendar year, the day a registered customer's own date matches today (month+day) - checked every day. A customer with no Date of Birth on file never matches the ""Birth Date"" option; a customer with no orders never matches ""First Order Anniversary"".","Se activa una vez por año calendario, el día en que la fecha del cliente registrado coincide con la de hoy (mes+día); se verifica todos los días. Un cliente que no tiene fecha de nacimiento registrada nunca coincide con la opción ""Fecha de nacimiento""; un cliente sin pedidos nunca coincide con la opción ""Aniversario del primer pedido""."
