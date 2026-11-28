@@ -110,12 +110,19 @@ forward, not retroactively to history before it was adopted.
 
 Versioning is via git tags only (see `AGENTS.md`) - there's no `"version"` in `composer.json`.
 
-1. Open a PR that renames `docs/CHANGELOG.md`'s `## [Unreleased]` header to `## [X.Y.Z] - YYYY-MM-DD`
+1. Run the full MFTF suite first - trigger `.github/workflows/mftf.yml` (`workflow_dispatch`) and
+   confirm every group (`campaign`, `campaign2`, `campaign3`, `segment`, `tracking`, `dashboard`,
+   `lifecycle`) is green. It's deliberately not part of the required checks on every PR (too slow/
+   flaky for that, see `AGENTS.md`'s own known-flakiness notes), which means nothing else in the
+   normal PR flow runs it - a release is the one point this module's real admin-UI/storefront
+   coverage gets exercised end to end before shipping. Don't cut a release on a red or stale MFTF
+   run; re-run it first if it's been a while since the last green one.
+2. Open a PR that renames `docs/CHANGELOG.md`'s `## [Unreleased]` header to `## [X.Y.Z] - YYYY-MM-DD`
    (today's date) right above it, leaving a fresh empty `## [Unreleased]` in place for future entries.
    Minor if there's a real `### Added`, patch otherwise. Also add a short, plain-language entry to
    `ordo-site/changelog.html` (separate repo, deployed to ordo.marketing - it doesn't update itself from
    this file), and update `README.md`/`README.pl.md`'s feature lists for anything they're still missing.
-2. Once that PR is merged to `main`, run `scripts/release.sh X.Y.Z` from `main` - it tags the current
+3. Once that PR is merged to `main`, run `scripts/release.sh X.Y.Z` from `main` - it tags the current
    commit **and** publishes the matching GitHub Release (using that version's own changelog section as
    the release notes) in one step. Don't just `git tag`/`git push` by hand - that's what left 1.6.0 with
    a tag but no visible entry on the [Releases page](https://github.com/michalper/ordo/releases).
