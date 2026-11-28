@@ -172,6 +172,18 @@ class ProductRecommender
      * fallback path hit whenever co-purchase affinity alone doesn't fill $limit (mirrors
      * RfmCalculator::percentileRanksCache).
      *
+     * Ties on `total_qty` (the common case for a low-volume store, or right after a fresh
+     * install - every SKU tied at 1) are broken by the SKU's own most recent sale, newest first.
+     * Without this, MySQL's tie order for two equal `SUM()` groups is whatever GROUP BY happened
+     * to produce (observed as oldest-inserted-row-wins in practice) - a real bug, not just a test
+     * nicety: a store's actual best-seller fallback could stay pinned to old, barely-selling
+     * SKUs that happened to be entered first, while a genuinely surging-right-now product never
+     * displaces them because it hasn't yet out-SOLD the old ones, only out-paced them in recency.
+     * Reported directly against a real MFTF run: `StorefrontCrossSellWidgetTest`'s own seed
+     * purchase (the store's only sale at the time) still lost this tie against older leftover
+     * qty=1 rows from earlier tests in the same CI run, keeping it out of the top
+     * self::BEST_SELLERS_CACHE_SIZE/the widget's own small $limit slice.
+     *
      * @return string[]
      */
     private function rankedBestSellerSkus(): array
@@ -193,11 +205,15 @@ class ProductRecommender
             ->joinInner(
                 ['oi' => $orderItemTable],
                 'oi.order_id = o.entity_id',
-                ['sku' => 'oi.sku', 'total_qty' => 'SUM(oi.qty_ordered)']
+                [
+                    'sku' => 'oi.sku',
+                    'total_qty' => 'SUM(oi.qty_ordered)',
+                    'most_recent_sale' => 'MAX(o.created_at)',
+                ]
             )
             ->where('o.state != ?', 'canceled')
             ->group('oi.sku')
-            ->order('total_qty DESC')
+            ->order(['total_qty DESC', 'most_recent_sale DESC'])
             ->limit(self::BEST_SELLERS_CACHE_SIZE);
 
         $this->bestSellerCache = array_map('strval', $connection->fetchCol($select));
