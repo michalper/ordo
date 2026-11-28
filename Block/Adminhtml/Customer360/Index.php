@@ -9,6 +9,7 @@ use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Pricing\Helper\Data as PricingHelper;
 use Magento\Framework\Registry;
+use Magento\Framework\Stdlib\DateTime\TimezoneInterface;
 use Ordo\Automation\Model\Customer360\Customer360Snapshot;
 use Ordo\Automation\Model\Customer360\Customer360SnapshotBuilder;
 
@@ -26,9 +27,35 @@ class Index extends Template
         private readonly CustomerRepositoryInterface $customerRepository,
         private readonly Customer360SnapshotBuilder $snapshotBuilder,
         private readonly PricingHelper $pricingHelper,
+        private readonly TimezoneInterface $timezone,
         array $data = []
     ) {
         parent::__construct($context, $data);
+    }
+
+    public function formatTouchpointDate(string $rawDateTime): string
+    {
+        return $this->timezone->formatDateTime($rawDateTime, \IntlDateFormatter::MEDIUM, \IntlDateFormatter::SHORT);
+    }
+
+    /**
+     * Literal __('...') calls per case, not a dynamic __($variable) lookup against a label
+     * array - same reasoning Model\Campaign\TypeLabels's own docblock gives: a dynamic call
+     * resolves correctly at runtime but isn't discoverable by bin/magento i18n:collect-phrases
+     * (phpcs's own Magento2.Legacy.Translate sniff flags it). The default arm's raw-type
+     * fallback is passed through __() too, same as TypeLabels::humanize() - harmless, a CSV miss
+     * just returns the key text unchanged.
+     */
+    public function getTouchpointTypeLabel(string $type): string
+    {
+        return match ($type) {
+            'sent' => (string) __('Sent'),
+            'opened' => (string) __('Opened'),
+            'clicked' => (string) __('Clicked'),
+            'read' => (string) __('Read'),
+            'converted' => (string) __('Converted'),
+            default => (string) __($type),
+        };
     }
 
     public function formatCurrency(float $amount): string

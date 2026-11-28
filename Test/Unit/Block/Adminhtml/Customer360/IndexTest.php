@@ -12,6 +12,7 @@ use Magento\Framework\Escaper;
 use Magento\Framework\ObjectManagerInterface;
 use Magento\Framework\Pricing\Helper\Data as PricingHelper;
 use Magento\Framework\Registry;
+use Magento\Framework\Stdlib\DateTime\TimezoneInterface;
 use Magento\Framework\UrlInterface;
 use Ordo\Automation\Block\Adminhtml\Customer360\Index;
 use Ordo\Automation\Model\Customer360\Customer360Snapshot;
@@ -25,6 +26,7 @@ class IndexTest extends TestCase
     private Customer360SnapshotBuilder $snapshotBuilder;
     private UrlInterface $urlBuilder;
     private PricingHelper $pricingHelper;
+    private TimezoneInterface $timezone;
     private Index $block;
 
     protected function setUp(): void
@@ -38,6 +40,7 @@ class IndexTest extends TestCase
         $this->snapshotBuilder = $this->createStub(Customer360SnapshotBuilder::class);
         $this->urlBuilder = $this->createStub(UrlInterface::class);
         $this->pricingHelper = $this->createStub(PricingHelper::class);
+        $this->timezone = $this->createStub(TimezoneInterface::class);
 
         $context = $this->createStub(Context::class);
         $context->method('getUrlBuilder')->willReturn($this->urlBuilder);
@@ -48,7 +51,8 @@ class IndexTest extends TestCase
             $this->registry,
             $this->customerRepository,
             $this->snapshotBuilder,
-            $this->pricingHelper
+            $this->pricingHelper,
+            $this->timezone
         );
     }
 
@@ -116,7 +120,8 @@ class IndexTest extends TestCase
             orderCount: 3,
             orderTotal: 199.99,
             projectedClv: 1234.56,
-            churnRiskRatio: 1.35
+            churnRiskRatio: 1.35,
+            touchpoints: []
         );
 
         $builder = $this->createMock(Customer360SnapshotBuilder::class);
@@ -124,7 +129,14 @@ class IndexTest extends TestCase
 
         $context = $this->createStub(Context::class);
         $context->method('getUrlBuilder')->willReturn($this->urlBuilder);
-        $block = new Index($context, $this->registry, $this->customerRepository, $builder, $this->pricingHelper);
+        $block = new Index(
+            $context,
+            $this->registry,
+            $this->customerRepository,
+            $builder,
+            $this->pricingHelper,
+            $this->timezone
+        );
 
         self::assertSame($snapshot, $block->getSnapshot());
         // Second call must not rebuild - the mock's expects(once()) above enforces this.
@@ -152,6 +164,46 @@ class IndexTest extends TestCase
     {
         self::assertSame('1.35', $this->block->formatRatio(1.3499));
         self::assertSame('1.00', $this->block->formatRatio(1.0));
+    }
+
+    public function testFormatTouchpointDateDelegatesToTimezone(): void
+    {
+        // A local mock, not the shared stub property - this is the one test that asserts the
+        // exact args passed to formatDateTime() via with(), which PHPUnit 12 deprecates (and
+        // PHPUnit 13 will reject outright) on a plain stub. Keeping it local, rather than making
+        // the shared $this->timezone property a mock, avoids every other test in this file (which
+        // never touches it) tripping PHPUnit's own "mock created but never configured" notice.
+        $timezone = $this->createMock(TimezoneInterface::class);
+        $timezone->expects(self::once())->method('formatDateTime')
+            ->with('2026-11-20 09:00:00', \IntlDateFormatter::MEDIUM, \IntlDateFormatter::SHORT)
+            ->willReturn('Nov 20, 2026, 9:00 AM');
+
+        $context = $this->createStub(Context::class);
+        $context->method('getUrlBuilder')->willReturn($this->urlBuilder);
+        $block = new Index(
+            $context,
+            $this->registry,
+            $this->customerRepository,
+            $this->snapshotBuilder,
+            $this->pricingHelper,
+            $timezone
+        );
+
+        self::assertSame('Nov 20, 2026, 9:00 AM', $block->formatTouchpointDate('2026-11-20 09:00:00'));
+    }
+
+    public function testGetTouchpointTypeLabelReturnsKnownLabels(): void
+    {
+        self::assertSame('Sent', $this->block->getTouchpointTypeLabel('sent'));
+        self::assertSame('Opened', $this->block->getTouchpointTypeLabel('opened'));
+        self::assertSame('Clicked', $this->block->getTouchpointTypeLabel('clicked'));
+        self::assertSame('Read', $this->block->getTouchpointTypeLabel('read'));
+        self::assertSame('Converted', $this->block->getTouchpointTypeLabel('converted'));
+    }
+
+    public function testGetTouchpointTypeLabelFallsBackToTheRawTypeWhenUnknown(): void
+    {
+        self::assertSame('something_new', $this->block->getTouchpointTypeLabel('something_new'));
     }
 
     public function testStatRowRendersTheLabelEscapedAndTheValueHtmlAsIs(): void
