@@ -32,6 +32,14 @@ class Config
     private const string XML_PATH_BROWSE_ABANDONMENT_MAX_REMINDERS
         = 'ordo_automation/browse_abandonment/max_reminders';
 
+    private const string XML_PATH_CHECKOUT_ABANDONMENT_ENABLED = 'ordo_automation/checkout_abandonment/enabled';
+    private const string XML_PATH_CHECKOUT_ABANDONMENT_DELAY_MINUTES
+        = 'ordo_automation/checkout_abandonment/delay_minutes';
+    private const string XML_PATH_CHECKOUT_ABANDONMENT_MIN_SUBTOTAL
+        = 'ordo_automation/checkout_abandonment/min_subtotal';
+    private const string XML_PATH_CHECKOUT_ABANDONMENT_MAX_REMINDERS
+        = 'ordo_automation/checkout_abandonment/max_reminders';
+
     private const string XML_PATH_WISHLIST_ABANDONMENT_ENABLED = 'ordo_automation/wishlist_abandonment/enabled';
     private const string XML_PATH_WISHLIST_ABANDONMENT_DELAY_DAYS
         = 'ordo_automation/wishlist_abandonment/delay_days';
@@ -444,6 +452,34 @@ class Config
     public function getBrowseAbandonmentMaxReminders(?int $storeId = null): int
     {
         return $this->intConfig(self::XML_PATH_BROWSE_ABANDONMENT_MAX_REMINDERS, 1, $storeId);
+    }
+
+    public function isCheckoutAbandonmentEnabled(?int $storeId = null): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            self::XML_PATH_CHECKOUT_ABANDONMENT_ENABLED,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    public function getCheckoutAbandonmentDelayMinutes(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_CHECKOUT_ABANDONMENT_DELAY_MINUTES, 60, $storeId);
+    }
+
+    public function getCheckoutAbandonmentMinSubtotal(?int $storeId = null): float
+    {
+        return (float) $this->scopeConfig->getValue(
+            self::XML_PATH_CHECKOUT_ABANDONMENT_MIN_SUBTOTAL,
+            ScopeInterface::SCOPE_STORE,
+            $storeId
+        );
+    }
+
+    public function getCheckoutAbandonmentMaxReminders(?int $storeId = null): int
+    {
+        return $this->intConfig(self::XML_PATH_CHECKOUT_ABANDONMENT_MAX_REMINDERS, 1, $storeId);
     }
 
     public function isWishlistAbandonmentEnabled(?int $storeId = null): bool

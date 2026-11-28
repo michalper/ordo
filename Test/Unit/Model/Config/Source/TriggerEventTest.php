@@ -21,6 +21,7 @@ class TriggerEventTest extends TestCase
                 CampaignTriggerInterface::TRIGGER_TAG_ADDED,
                 CampaignTriggerInterface::TRIGGER_CART_ABANDONED,
                 CampaignTriggerInterface::TRIGGER_BROWSE_ABANDONED,
+                CampaignTriggerInterface::TRIGGER_CHECKOUT_ABANDONED,
                 CampaignTriggerInterface::TRIGGER_VISITOR_TAG_ADDED,
                 CampaignTriggerInterface::TRIGGER_SCORE_THRESHOLD_CROSSED,
                 CampaignTriggerInterface::TRIGGER_SCHEDULED_AT,

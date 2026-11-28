@@ -86,6 +86,7 @@ class ConfigTest extends TestCase
         self::assertTrue($this->config->isCrossSellWidgetEnabled());
         self::assertTrue($this->config->isChannelConsentCaptureEnabled());
         self::assertTrue($this->config->isWalletPassEnabled());
+        self::assertTrue($this->config->isCheckoutAbandonmentEnabled());
     }
 
     public function testWalletPassGettersDelegateToScopeConfig(): void
@@ -384,6 +385,8 @@ class ConfigTest extends TestCase
         self::assertSame(1, $this->config->getAbandonedCartMaxReminders());
         self::assertSame(60, $this->config->getBrowseAbandonmentDelayMinutes());
         self::assertSame(1, $this->config->getBrowseAbandonmentMaxReminders());
+        self::assertSame(60, $this->config->getCheckoutAbandonmentDelayMinutes());
+        self::assertSame(1, $this->config->getCheckoutAbandonmentMaxReminders());
         self::assertSame(2, $this->config->getOfferLeadDays());
         self::assertSame(1, $this->config->getOfferMaxSelfExtensions());
         self::assertSame(7, $this->config->getOfferSelfExtensionDays());
@@ -559,6 +562,13 @@ class ConfigTest extends TestCase
         $this->scopeConfig->method('getValue')->willReturn('99.90');
 
         self::assertSame(99.9, $this->config->getAbandonedCartMinSubtotal());
+    }
+
+    public function testCheckoutAbandonmentMinSubtotalIsFloat(): void
+    {
+        $this->scopeConfig->method('getValue')->willReturn('49.90');
+
+        self::assertSame(49.9, $this->config->getCheckoutAbandonmentMinSubtotal());
     }
 
     public function testGetReorderAtRiskDriftRatioUsesDefaultWhenUnset(): void

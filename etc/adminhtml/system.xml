@@ -75,6 +75,29 @@
                     <depends><field id="fallback_enabled">1</field></depends>
                 </field>
             </group>
+            <group id="checkout_abandonment" translate="label" type="text" sortOrder="25" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Checkout Abandonment</label>
+                <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Dispatches the "checkout_abandoned" campaign trigger - a stronger signal than Abandoned Cart Recovery above, for a shopper who reached checkout and dropped. Has no built-in reminder of its own; wire an action onto the trigger via the campaign builder.</comment>
+                </field>
+                <field id="delay_minutes" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Dispatch trigger N minutes after checkout was started</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="min_subtotal" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Minimum cart subtotal to trigger</label>
+                    <validate>validate-number</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+                <field id="max_reminders" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Maximum triggers per cart</label>
+                    <validate>validate-digits validate-greater-than-zero</validate>
+                    <depends><field id="enabled">1</field></depends>
+                </field>
+            </group>
             <group id="browse_abandonment" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Browse Abandonment</label>
                 <field id="enabled" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
