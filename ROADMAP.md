@@ -986,27 +986,18 @@ requirement — see this file's own "Test coverage" section), so proposing it ag
 a third identical dead end. No candidate below needs a Commerce-only primitive, a paid third-party
 account this project lacks, or touches the standing no-auto-charge constraint.
 
-- **Found a real, previously-undetected mistake in this file's own history while checking the
-  loyalty-points area for gaps:** the 2026-11-13 brainstorm round (fourth pass) claimed non-order
-  loyalty-point-earning was already shipped, citing `Model\Campaign\Action\AddPoints` as "already a
-  generic action attachable to any trigger, not order-only." That class is real and is already
-  generic — but it calls `CustomerScoreManager::addPoints()`, the **lead-scoring** system's own
-  score (`score_threshold_crossed` trigger, `ScoreAtLeast` condition), a completely different
-  "points" concept from the **loyalty rewards** points balance `Model\LoyaltyPointsManager` backs
-  (`ordo_loyalty_points_ledger`, redeemable via `LoyaltyPointsManagement`, the Google Wallet pass,
-  this same round's own liability-report candidate above). There is no campaign action anywhere
-  that awards loyalty points — `Observer\EarnLoyaltyPointsForOrder` is the only writer of `type =
-  earn` rows, and it's hardcoded to fire proportionally to an order's own total, not callable from
-  any other trigger. **New candidate: `Model\Campaign\Action\AddLoyaltyPoints`**, params `{"points":
-  "100"}` (same shape as `AddPoints`'s own params), calling a new small, explicit
-  `LoyaltyPointsManager::awardBonus(int $customerId, int $points, string $reason)` method (a thin
-  wrapper writing a `type = earn` row directly, parallel to `earnForOrder()` but without an
-  `order_id`) — this is what actually lets a store run a signup-bonus campaign
-  (`customer_registered` trigger), a referral bonus distinct from `generate_coupon`
-  (`referral_converted`/`referral_signed_up` triggers), or a time-boxed "double points this
-  weekend" promotion (`segment_blast`/`scheduled_at` trigger + `AddLoyaltyPoints` with a
-  params-computed multiplier), none of which this module can build today despite the points
-  program itself (ADR 0044) being otherwise complete.
+- ~~**Found a real, previously-undetected mistake in this file's own history while checking the
+  loyalty-points area for gaps**~~ — the mistake is explained in this file's own earlier text
+  (the 2026-11-13 brainstorm round (fourth pass) wrongly cited `Model\Campaign\Action\AddPoints` as
+  already covering non-order loyalty-point-earning, when it actually awards the unrelated
+  lead-scoring score); the gap it found is now shipped, see
+  `docs/adr/0089-add-loyalty-points-campaign-action.md`. New `add_loyalty_points` campaign action
+  (`Model\Campaign\Action\AddLoyaltyPoints`) and a new `LoyaltyPointsManager::awardBonus()` method
+  let a store run a signup-bonus campaign (`customer_registered` trigger), a referral bonus
+  distinct from `generate_coupon` (`referral_converted`/`referral_signed_up` triggers), or a
+  time-boxed "double points this weekend" promotion (`segment_blast`/`scheduled_at` trigger),
+  none of which this module could build before despite the points program itself (ADR 0044) being
+  otherwise complete.
 - **Loyalty points are expiring without any warning to the customer.** `Cron\ExpireLoyaltyPoints`
   (when `Helper\Config::getLoyaltyPointsExpiryDays()` is set) silently deletes old earn rows via
   `LoyaltyPointsManager::expireOldEarnedPoints()` with zero customer-facing notice beforehand — the
@@ -1019,16 +1010,9 @@ account this project lacks, or touches the standing no-auto-charge constraint.
   `expireOldEarnedPoints()` will later use, claim them the same way `ReminderLogStore::claim()`
   already does for every other reminder cron, and dispatch a new `TRIGGER_LOYALTY_POINTS_EXPIRING`
   trigger with the at-risk point total in context.
-- **Customer 360 has no chronological touchpoint timeline for the one customer it's open on.**
-  `Model\Customer360\Customer360SnapshotBuilder::build()` aggregates point-in-time summary stats
-  (latest NPS score, matching segments, order stats, and — per ADR 0050 — CLV/churn-risk) but
-  nothing in this module reads `ordo_message_log`/`ordo_message_log_event`/
-  `ordo_campaign_outcome_log` *per customer, in chronological order* anywhere — every existing
-  report (`RevenueAnalytics`, `CampaignComparison`, `MessageEngaged`'s own condition query) reads
-  those tables aggregated across customers or scoped to one campaign, never as one customer's own
-  sent/opened/clicked/converted history laid out as a timeline. A new section on the existing
-  Customer 360 page, backed by a new read-only method joining those three tables by `customer_id`
-  and ordering by timestamp — same "pure SQL over existing tables, no new table, no cron" shape
-  every analytics addition in this module already uses - would answer the question an admin
-  actually asks when a customer calls in: "what has this specific person actually received and
-  done, in order?"
+- ~~**Customer 360 has no chronological touchpoint timeline for the one customer it's open on.**~~ —
+  shipped, see `docs/adr/0087-customer360-touchpoint-timeline.md`. New
+  `Model\Customer360\CustomerTouchpointReader::getTimeline()` merges `ordo_message_log`/
+  `ordo_message_log_event`/`ordo_campaign_outcome_log` into one chronological sent/opened/clicked/
+  read/converted history for one customer, rendered as a new "Touchpoint timeline" card on the
+  existing Customer 360 page — no new table, cron, page, or layout handle.

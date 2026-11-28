@@ -12,6 +12,8 @@ use Ordo\Automation\Model\ChurnRisk\ChurnRiskCalculator;
 use Ordo\Automation\Model\Clv\ClvCalculator;
 use Ordo\Automation\Model\CustomerScoreManager;
 use Ordo\Automation\Model\Customer360\Customer360SnapshotBuilder;
+use Ordo\Automation\Model\Customer360\CustomerTouchpoint;
+use Ordo\Automation\Model\Customer360\CustomerTouchpointReader;
 use Ordo\Automation\Model\LoyaltyTierCalculator;
 use Ordo\Automation\Model\ResourceModel\Segment\Collection as SegmentCollection;
 use Ordo\Automation\Model\ResourceModel\Segment\CollectionFactory as SegmentCollectionFactory;
@@ -124,6 +126,10 @@ class Customer360SnapshotBuilderTest extends TestCase
         $churnRiskCalculator = $this->createStub(ChurnRiskCalculator::class);
         $churnRiskCalculator->method('getChurnRiskRatioForCustomer')->willReturn(1.35);
 
+        $touchpoint = new CustomerTouchpoint('sent', '2026-11-20 09:00:00', 'email', 'Win-back', null);
+        $customerTouchpointReader = $this->createStub(CustomerTouchpointReader::class);
+        $customerTouchpointReader->method('getTimeline')->willReturn([$touchpoint]);
+
         $builder = new Customer360SnapshotBuilder(
             $customerScoreManager,
             $loyaltyTierCalculator,
@@ -134,7 +140,8 @@ class Customer360SnapshotBuilderTest extends TestCase
             $segmentMatcher,
             $this->makeResourceConnection(3, 199.99),
             $clvCalculator,
-            $churnRiskCalculator
+            $churnRiskCalculator,
+            $customerTouchpointReader
         );
 
         $snapshot = $builder->build($customer);
@@ -155,6 +162,7 @@ class Customer360SnapshotBuilderTest extends TestCase
         self::assertSame(199.99, $snapshot->orderTotal);
         self::assertSame(1234.56, $snapshot->projectedClv);
         self::assertSame(1.35, $snapshot->churnRiskRatio);
+        self::assertSame([$touchpoint], $snapshot->touchpoints);
     }
 
     public function testBuildHandlesACustomerWithNoOrdersOrDataGracefully(): void
@@ -201,6 +209,9 @@ class Customer360SnapshotBuilderTest extends TestCase
         $churnRiskCalculator = $this->createStub(ChurnRiskCalculator::class);
         $churnRiskCalculator->method('getChurnRiskRatioForCustomer')->willReturn(null);
 
+        $customerTouchpointReader = $this->createStub(CustomerTouchpointReader::class);
+        $customerTouchpointReader->method('getTimeline')->willReturn([]);
+
         $builder = new Customer360SnapshotBuilder(
             $customerScoreManager,
             $loyaltyTierCalculator,
@@ -211,7 +222,8 @@ class Customer360SnapshotBuilderTest extends TestCase
             $segmentMatcher,
             $this->makeResourceConnection(0, 0.0),
             $clvCalculator,
-            $churnRiskCalculator
+            $churnRiskCalculator,
+            $customerTouchpointReader
         );
 
         $snapshot = $builder->build($customer);
@@ -226,6 +238,7 @@ class Customer360SnapshotBuilderTest extends TestCase
         self::assertSame(0.0, $snapshot->orderTotal);
         self::assertSame(0.0, $snapshot->projectedClv);
         self::assertNull($snapshot->churnRiskRatio);
+        self::assertSame([], $snapshot->touchpoints);
     }
 
     public function testBuildDefaultsOrderStatsToZeroWhenTheAggregateQueryReturnsNoRow(): void
@@ -269,6 +282,9 @@ class Customer360SnapshotBuilderTest extends TestCase
         $clvCalculator = $this->createStub(ClvCalculator::class);
         $churnRiskCalculator = $this->createStub(ChurnRiskCalculator::class);
 
+        $customerTouchpointReader = $this->createStub(CustomerTouchpointReader::class);
+        $customerTouchpointReader->method('getTimeline')->willReturn([]);
+
         $builder = new Customer360SnapshotBuilder(
             $customerScoreManager,
             $loyaltyTierCalculator,
@@ -279,7 +295,8 @@ class Customer360SnapshotBuilderTest extends TestCase
             $segmentMatcher,
             $this->makeResourceConnectionWithNoRow(),
             $clvCalculator,
-            $churnRiskCalculator
+            $churnRiskCalculator,
+            $customerTouchpointReader
         );
 
         $snapshot = $builder->build($customer);

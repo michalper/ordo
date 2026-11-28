@@ -129,5 +129,43 @@ $snapshot = $block->getSnapshot();
                 </div>
             <?php endif; ?>
         </div>
+
+        <div class="ordo-gdpr-card">
+            <div class="ordo-section-head">
+                <h2><?= $escaper->escapeHtml(__('Touchpoint timeline')) ?></h2>
+            </div>
+            <?php if ($snapshot->touchpoints === []): ?>
+                <p class="ordo-listing-intro">
+                    <?= $escaper->escapeHtml(__('No sends, engagement, or conversions recorded yet.')) ?>
+                </p>
+            <?php else: ?>
+                <div class="ordo-trigger-stats">
+                    <?php foreach ($snapshot->touchpoints as $touchpoint): ?>
+                        <?php
+                        $badgeClass = $touchpoint->type === 'converted' ? 'ordo-badge-on' : 'ordo-badge-off';
+                        $detailParts = [];
+                        if ($touchpoint->channel !== null) {
+                            $detailParts[] = strtoupper($touchpoint->channel);
+                        }
+                        $detailParts[] = $touchpoint->campaignName ?? (string) __('No campaign');
+                        if ($touchpoint->orderId !== null) {
+                            $detailParts[] = (string) __('Order #%1', $touchpoint->orderId);
+                        }
+                        ?>
+                        <div class="ordo-trigger-stat-row">
+                            <span class="ordo-badge <?= $escaper->escapeHtmlAttr($badgeClass) ?>">
+                                <?= $escaper->escapeHtml($block->getTouchpointTypeLabel($touchpoint->type)) ?>
+                            </span>
+                            <span class="ordo-trigger-stat-label">
+                                <?= $escaper->escapeHtml($block->formatTouchpointDate($touchpoint->occurredAt)) ?>
+                            </span>
+                            <span class="ordo-trigger-stat-value">
+                                <?= $escaper->escapeHtml(implode(' · ', $detailParts)) ?>
+                            </span>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
     <?php endif; ?>
 </div>

@@ -35,7 +35,8 @@ class Customer360SnapshotBuilder
         private readonly SegmentMatcher $segmentMatcher,
         private readonly ResourceConnection $resourceConnection,
         private readonly ClvCalculator $clvCalculator,
-        private readonly ChurnRiskCalculator $churnRiskCalculator
+        private readonly ChurnRiskCalculator $churnRiskCalculator,
+        private readonly CustomerTouchpointReader $customerTouchpointReader
     ) {
     }
 
@@ -63,7 +64,8 @@ class Customer360SnapshotBuilder
             orderCount: $orderCount,
             orderTotal: $orderTotal,
             projectedClv: $this->clvCalculator->getProjectedClv($customerId),
-            churnRiskRatio: $this->churnRiskCalculator->getChurnRiskRatioForCustomer($customerId)
+            churnRiskRatio: $this->churnRiskCalculator->getChurnRiskRatioForCustomer($customerId),
+            touchpoints: $this->customerTouchpointReader->getTimeline($customerId)
         );
     }
 

@@ -1462,6 +1462,12 @@ parameters:
 			message: '#^Cannot cast mixed to int\.$#'
 			identifier: cast.int
 			count: 2
+			path: Model/Campaign/Action/AddLoyaltyPoints.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 2
 			path: Model/Campaign/Action/AddPoints.php
 
 		-
@@ -2412,6 +2418,42 @@ parameters:
 			identifier: return.type
 			count: 1
 			path: Model/Customer360/Customer360SnapshotBuilder.php
+
+		-
+			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(mixed\)\: mixed\)\|null, Closure\(array\)\: Ordo\\Automation\\Model\\Customer360\\CustomerTouchpoint given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/Customer360/CustomerTouchpointReader.php
+
+		-
+			message: '#^Parameter \$type of class Ordo\\Automation\\Model\\Customer360\\CustomerTouchpoint constructor expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/Customer360/CustomerTouchpointReader.php
+
+		-
+			message: '#^Parameter \$occurredAt of class Ordo\\Automation\\Model\\Customer360\\CustomerTouchpoint constructor expects string, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/Customer360/CustomerTouchpointReader.php
+
+		-
+			message: '#^Parameter \$channel of class Ordo\\Automation\\Model\\Customer360\\CustomerTouchpoint constructor expects string\|null, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/Customer360/CustomerTouchpointReader.php
+
+		-
+			message: '#^Parameter \$campaignName of class Ordo\\Automation\\Model\\Customer360\\CustomerTouchpoint constructor expects string\|null, mixed given\.$#'
+			identifier: argument.type
+			count: 1
+			path: Model/Customer360/CustomerTouchpointReader.php
+
+		-
+			message: '#^Cannot cast mixed to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: Model/Customer360/CustomerTouchpointReader.php
 
 		-
 			message: '#^Cannot cast mixed to int\.$#'

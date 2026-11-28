@@ -413,6 +413,7 @@
                 <item name="generate_coupon" xsi:type="object">Ordo\Automation\Model\Campaign\Action\GenerateCoupon</item>
                 <item name="popup" xsi:type="object">Ordo\Automation\Model\Campaign\Action\ShowPopup</item>
                 <item name="add_points" xsi:type="object">Ordo\Automation\Model\Campaign\Action\AddPoints</item>
+                <item name="add_loyalty_points" xsi:type="object">Ordo\Automation\Model\Campaign\Action\AddLoyaltyPoints</item>
                 <item name="add_product_recommendations" xsi:type="object">Ordo\Automation\Model\Campaign\Action\AddProductRecommendations</item>
                 <item name="add_dynamic_content" xsi:type="object">Ordo\Automation\Model\Campaign\Action\AddDynamicContent</item>
                 <item name="send_sms" xsi:type="object">Ordo\Automation\Model\Campaign\Action\SendSms</item>

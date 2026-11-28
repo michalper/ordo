@@ -10,13 +10,16 @@ namespace Ordo\Automation\Model\Customer360;
  * condition/trigger already reads at dispatch time (CustomerScoreManager, LoyaltyTierCalculator,
  * RfmCalculator, CustomerTagManager, SurveyPrompt, SegmentMatcher, Clv\ClvCalculator,
  * ChurnRisk\ChurnRiskCalculator), just gathered into one place for a human to look at instead of
- * cross-referencing five separate screens.
+ * cross-referencing five separate screens. $touchpoints is the one exception worth calling out -
+ * CustomerTouchpointReader doesn't read a precomputed per-customer value the way the others do,
+ * it merges three tables' own rows live (see that class's own docblock).
  */
 class Customer360Snapshot
 {
     /**
      * @param string[] $tags
      * @param string[] $matchingSegmentNames
+     * @param CustomerTouchpoint[] $touchpoints
      */
     public function __construct(
         public readonly int $customerId,
@@ -34,7 +37,8 @@ class Customer360Snapshot
         public readonly int $orderCount,
         public readonly float $orderTotal,
         public readonly float $projectedClv,
-        public readonly ?float $churnRiskRatio
+        public readonly ?float $churnRiskRatio,
+        public readonly array $touchpoints
     ) {
     }
 }

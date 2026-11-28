@@ -271,4 +271,42 @@ class LoyaltyPointsManagerTest extends TestCase
 
         self::assertSame([-100, -50], $insertedDeltas);
     }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testAwardBonusDoesNothingWhenDisabled(): void
+    {
+        $this->config->method('isLoyaltyPointsEnabled')->willReturn(false);
+
+        $this->connection->expects(self::never())->method('insert');
+
+        $this->makeManager()->awardBonus(42, 100, 'Signup bonus.');
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testAwardBonusDoesNothingWhenPointsIsZeroOrNegative(): void
+    {
+        $this->config->method('isLoyaltyPointsEnabled')->willReturn(true);
+
+        $this->connection->expects(self::never())->method('insert');
+
+        $this->makeManager()->awardBonus(42, 0, 'Signup bonus.');
+        $this->makeManager()->awardBonus(42, -5, 'Signup bonus.');
+    }
+
+    #[AllowMockObjectsWithoutExpectations]
+    public function testAwardBonusInsertsAnEarnRowWithNoOrderId(): void
+    {
+        $this->config->method('isLoyaltyPointsEnabled')->willReturn(true);
+
+        $this->connection->expects(self::once())->method('insert')
+            ->with('ordo_loyalty_points_ledger', self::callback(static function (array $row): bool {
+                return $row['customer_id'] === 42
+                    && $row['type'] === LoyaltyPointsManager::TYPE_EARN
+                    && $row['points_delta'] === 100
+                    && $row['order_id'] === null
+                    && $row['coupon_code'] === null;
+            }));
+
+        $this->makeManager()->awardBonus(42, 100, 'Signup bonus.');
+    }
 }
