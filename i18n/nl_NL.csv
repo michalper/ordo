@@ -1326,3 +1326,6 @@
 "Limit how many marketing messages we send you across every channel combined, tighter than our own store-wide limit if you like - leave blank to just use our default.","Beperk hoeveel marketingberichten we u sturen, over alle kanalen samen - strenger dan onze eigen winkelbrede limiet als u dat wilt. Laat leeg om gewoon onze standaardwaarde te gebruiken."
 "Maximum marketing messages per window","Maximum aantal marketingberichten per periode"
 "Checkout Abandoned (started checkout, no order since)","Afrekenen verlaten (afrekenen gestart, sindsdien geen bestelling)"
+"NPS Score At Most","NPS-score maximaal"
+"Maximum NPS score","Maximale NPS-score"
+"Assign Lead Routing Rule","Lead-routeringsregel toewijzen"

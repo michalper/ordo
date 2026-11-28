@@ -1326,3 +1326,6 @@
 "Limit how many marketing messages we send you across every channel combined, tighter than our own store-wide limit if you like - leave blank to just use our default.","Begränsa hur många marknadsföringsmeddelanden vi skickar till dig över alla kanaler tillsammans - strängare än vår egen butiksomfattande gräns om du vill. Lämna tomt för att använda vårt standardvärde."
 "Maximum marketing messages per window","Max antal marknadsföringsmeddelanden per fönster"
 "Checkout Abandoned (started checkout, no order since)","Utcheckning övergiven (utcheckning påbörjad, ingen beställning sedan)"
+"NPS Score At Most","Högst NPS-resultat"
+"Maximum NPS score","Högsta NPS-poäng"
+"Assign Lead Routing Rule","Tilldela regel för leadsdirigering"

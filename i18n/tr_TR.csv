@@ -1326,3 +1326,6 @@
 "Limit how many marketing messages we send you across every channel combined, tighter than our own store-wide limit if you like - leave blank to just use our default.","Tüm kanallarda toplamda size gönderdiğimiz pazarlama mesajı sayısını sınırlayın - isterseniz mağaza genelindeki sınırımızdan daha sıkı olabilir. Varsayılan değerimizi kullanmak için boş bırakın."
 "Maximum marketing messages per window","Pencere başına maksimum pazarlama mesajı"
 "Checkout Abandoned (started checkout, no order since)","Ödeme Terk Edildi (ödeme başlatıldı, o zamandan beri sipariş yok)"
+"NPS Score At Most","En Fazla NPS Puanı"
+"Maximum NPS score","Maksimum NPS puanı"
+"Assign Lead Routing Rule","Potansiyel Müşteri Yönlendirme Kuralı Ata"

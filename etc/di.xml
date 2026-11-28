@@ -353,6 +353,7 @@
                 <item name="not_in_segment" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\NotInSegment</item>
                 <item name="loyalty_tier_at_least" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\LoyaltyTierAtLeast</item>
                 <item name="nps_score_at_least" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\NpsScoreAtLeast</item>
+                <item name="nps_score_at_most" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\NpsScoreAtMost</item>
                 <item name="survey_response_equals" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\SurveyResponseEquals</item>
                 <item name="purchased_sku" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\PurchasedSku</item>
                 <item name="purchased_category" xsi:type="object">Ordo\Automation\Model\Campaign\Condition\PurchasedCategory</item>
@@ -414,6 +415,7 @@
                 <item name="popup" xsi:type="object">Ordo\Automation\Model\Campaign\Action\ShowPopup</item>
                 <item name="add_points" xsi:type="object">Ordo\Automation\Model\Campaign\Action\AddPoints</item>
                 <item name="add_loyalty_points" xsi:type="object">Ordo\Automation\Model\Campaign\Action\AddLoyaltyPoints</item>
+                <item name="assign_lead_routing_rule" xsi:type="object">Ordo\Automation\Model\Campaign\Action\AssignLeadRoutingRule</item>
                 <item name="add_product_recommendations" xsi:type="object">Ordo\Automation\Model\Campaign\Action\AddProductRecommendations</item>
                 <item name="add_dynamic_content" xsi:type="object">Ordo\Automation\Model\Campaign\Action\AddDynamicContent</item>
                 <item name="send_sms" xsi:type="object">Ordo\Automation\Model\Campaign\Action\SendSms</item>

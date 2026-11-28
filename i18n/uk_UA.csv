@@ -1326,3 +1326,6 @@
 "Limit how many marketing messages we send you across every channel combined, tighter than our own store-wide limit if you like - leave blank to just use our default.","Обмежте, скільки маркетингових повідомлень ми надсилаємо вам загалом на всіх каналах - суворіше за наш загальний ліміт магазину, якщо хочете. Залиште порожнім, щоб використати значення за замовчуванням."
 "Maximum marketing messages per window","Максимум маркетингових повідомлень за період"
 "Checkout Abandoned (started checkout, no order since)","Покинуте оформлення замовлення (оформлення розпочато, відтоді не замовляв)"
+"NPS Score At Most","Оцінка NPS не більше"
+"Maximum NPS score","Максимальна оцінка NPS"
+"Assign Lead Routing Rule","Призначити правило маршрутизації лідів"

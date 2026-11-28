@@ -1326,3 +1326,6 @@
 "Limit how many marketing messages we send you across every channel combined, tighter than our own store-wide limit if you like - leave blank to just use our default.","限制我们通过所有渠道合计向您发送的营销消息数量——如果您愿意，可以比我们的全店限制更严格。留空则使用我们的默认值。"
 "Maximum marketing messages per window","每个窗口期的最大营销消息数"
 "Checkout Abandoned (started checkout, no order since)","结账未完成（已开始结账，此后未下单）"
+"NPS Score At Most","NPS分数至多为"
+"Maximum NPS score","最高 NPS 评分"
+"Assign Lead Routing Rule","分配潜在客户路由规则"
